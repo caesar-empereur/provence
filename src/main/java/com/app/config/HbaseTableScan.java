@@ -1,5 +1,6 @@
 package com.app.config;
 
+import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.AliasFor;
 
 import java.lang.annotation.*;
@@ -10,6 +11,7 @@ import java.lang.annotation.*;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
+@Import(HbaseTableScanHandler.Registrar.class)
 public @interface HbaseTableScan {
 
     @AliasFor("basePackages")
