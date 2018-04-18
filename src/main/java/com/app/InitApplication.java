@@ -1,5 +1,6 @@
 package com.app;
 
+import com.app.annotation.HbaseTableScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -12,6 +13,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 @ComponentScan("com.app")
 @EntityScan("com.app.model")
+@HbaseTableScan("com.app.model")
 @SpringBootApplication
 @EnableSwagger2
 @ServletComponentScan

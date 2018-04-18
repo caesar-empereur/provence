@@ -1,6 +1,6 @@
 package com.app.model;
 
-import com.app.config.HbaseTable;
+import com.app.annotation.HbaseTable;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.Column;

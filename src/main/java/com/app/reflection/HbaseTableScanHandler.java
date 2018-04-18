@@ -1,12 +1,12 @@
-package com.app.config;
+package com.app.reflection;
 
+import com.app.annotation.HbaseTable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConstructorArgumentValues;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.domain.EntityScanPackages;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
@@ -22,7 +22,7 @@ import java.util.*;
  * Created by leon on 2017/4/11.
  */
 @Configuration
-public class HbaseTableScanHandler {
+public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar {
     
     private Log log = LogFactory.getLog(this.getClass());
     
@@ -35,8 +35,8 @@ public class HbaseTableScanHandler {
     private static final HbaseTableScanHandler NONE =
                                                     new HbaseTableScanHandler();
     
-    private static String[] addPackageNames(ConstructorArgumentValues constructorArguments,
-                                            Collection<String> packageNames) {
+    public static String[] addPackageNames(ConstructorArgumentValues constructorArguments,
+                                           Collection<String> packageNames) {
         String[] existing =
                           (String[]) constructorArguments.getIndexedArgumentValue(0,
                                                                                   String[].class)
@@ -47,8 +47,8 @@ public class HbaseTableScanHandler {
         return merged.toArray(new String[merged.size()]);
     }
     
-    private static void register(BeanDefinitionRegistry registry,
-                                 Collection<String> packageNames) {
+    public static void register(BeanDefinitionRegistry registry,
+                                Collection<String> packageNames) {
         Assert.notNull(registry, "Registry must not be null");
         Assert.notNull(packageNames, "PackageNames must not be null");
         if (registry.containsBeanDefinition(BEAN)) {
@@ -70,32 +70,30 @@ public class HbaseTableScanHandler {
         }
     }
     
-    static class Registrar implements ImportBeanDefinitionRegistrar {
-        @Override
-        public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
-                                            BeanDefinitionRegistry registry) {
-            
-        }
+    @Override
+    public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
+                                        BeanDefinitionRegistry registry) {
         
-        private Set<String> getPackagesToScan(AnnotationMetadata metadata) {
-            AnnotationAttributes attributes =
-                                            AnnotationAttributes.fromMap(metadata.getAnnotationAttributes(HbaseTable.class.getName()));
-            String[] basePackages = attributes.getStringArray("basePackages");
-            Class<?>[] basePackageClasses =
-                                          attributes.getClassArray("basePackageClasses");
-            Set<String> packagesToScan = new LinkedHashSet<>();
-            packagesToScan.addAll(Arrays.asList(basePackages));
-            for (Class<?> basePackageClass : basePackageClasses) {
-                packagesToScan.add(ClassUtils.getPackageName(basePackageClass));
-            }
-            if (packagesToScan.isEmpty()) {
-                String packageName =
-                                   ClassUtils.getPackageName(metadata.getClassName());
-                Assert.state(!StringUtils.isEmpty(packageName),
-                             "@HbaseTableScan cannot be used with the default package");
-                return Collections.singleton(packageName);
-            }
-            return packagesToScan;
+    }
+    
+    private Set<String> getPackagesToScan(AnnotationMetadata metadata) {
+        AnnotationAttributes attributes =
+                                        AnnotationAttributes.fromMap(metadata.getAnnotationAttributes(HbaseTable.class.getName()));
+        String[] basePackages = attributes.getStringArray("basePackages");
+        Class<?>[] basePackageClasses =
+                                      attributes.getClassArray("basePackageClasses");
+        Set<String> packagesToScan = new LinkedHashSet<>();
+        packagesToScan.addAll(Arrays.asList(basePackages));
+        for (Class<?> basePackageClass : basePackageClasses) {
+            packagesToScan.add(ClassUtils.getPackageName(basePackageClass));
         }
+        if (packagesToScan.isEmpty()) {
+            String packageName =
+                               ClassUtils.getPackageName(metadata.getClassName());
+            Assert.state(!StringUtils.isEmpty(packageName),
+                         "@HbaseTableScan cannot be used with the default package");
+            return Collections.singleton(packageName);
+        }
+        return packagesToScan;
     }
 }

@@ -1,5 +1,6 @@
-package com.app.config;
+package com.app.annotation;
 
+import com.app.reflection.HbaseTableScanHandler;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.AliasFor;
 
@@ -11,9 +12,9 @@ import java.lang.annotation.*;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Import(HbaseTableScanHandler.Registrar.class)
+@Import(HbaseTableScanHandler.class)
 public @interface HbaseTableScan {
 
     @AliasFor("basePackages")
-    String name() default "";
+    String value() default "";
 }
