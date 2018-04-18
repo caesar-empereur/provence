@@ -1,4 +1,4 @@
-package com.app.reflection;
+package com.app.core;
 
 import com.app.annotation.HbaseTable;
 import org.apache.commons.logging.Log;

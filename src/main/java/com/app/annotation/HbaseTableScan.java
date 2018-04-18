@@ -1,8 +1,7 @@
 package com.app.annotation;
 
-import com.app.reflection.HbaseTableScanHandler;
+import com.app.core.HbaseTableScanHandler;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.annotation.AliasFor;
 
 import java.lang.annotation.*;
 
@@ -15,6 +14,5 @@ import java.lang.annotation.*;
 @Import(HbaseTableScanHandler.class)
 public @interface HbaseTableScan {
 
-    @AliasFor("basePackages")
     String value() default "";
 }
