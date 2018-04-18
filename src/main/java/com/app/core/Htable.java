@@ -9,6 +9,8 @@ import java.util.Set;
  */
 public class Htable {
     
+    private String tableName;
+    
     private RowKey rowKey;
     
     private Map<String, Set<String>> columnsWithFamily = new LinkedHashMap();
@@ -17,14 +19,24 @@ public class Htable {
     
     private boolean hasColumnFamily;
     
-    public Htable(RowKey rowKey,
+    public Htable(String tableName,
+                  RowKey rowKey,
                   Map<String, Set<String>> columnsWithFamily,
                   Map columnWithoutFamily,
                   boolean hasColumnFamily) {
+        this.tableName = tableName;
         this.rowKey = rowKey;
         this.columnsWithFamily = columnsWithFamily;
         this.columnWithoutFamily = columnWithoutFamily;
         this.hasColumnFamily = hasColumnFamily;
+    }
+    
+    public String getTableName() {
+        return tableName;
+    }
+    
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
     }
     
     public RowKey getRowKey() {
