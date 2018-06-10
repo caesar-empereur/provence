@@ -1,6 +1,7 @@
 package com.app.core;
 
 import com.app.annotation.HbaseTable;
+import com.app.annotation.HbaseTableScan;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -16,7 +17,15 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.net.JarURLConnection;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.util.*;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 /**
  * Created by leon on 2017/4/11.
@@ -30,70 +39,102 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar {
     
     private Set<String> packageNames;
     
-    private static final String BEAN = HbaseTableScanHandler.class.getName();
-    
-    private static final HbaseTableScanHandler NONE =
-                                                    new HbaseTableScanHandler();
-    
-    public static String[] addPackageNames(ConstructorArgumentValues constructorArguments,
-                                           Collection<String> packageNames) {
-        String[] existing =
-                          (String[]) constructorArguments.getIndexedArgumentValue(0,
-                                                                                  String[].class)
-                                                         .getValue();
-        Set<String> merged = new LinkedHashSet<>();
-        merged.addAll(Arrays.asList(existing));
-        merged.addAll(packageNames);
-        return merged.toArray(new String[merged.size()]);
-    }
-    
-    public static void register(BeanDefinitionRegistry registry,
-                                Collection<String> packageNames) {
-        Assert.notNull(registry, "Registry must not be null");
-        Assert.notNull(packageNames, "PackageNames must not be null");
-        if (registry.containsBeanDefinition(BEAN)) {
-            BeanDefinition beanDefinition = registry.getBeanDefinition(BEAN);
-            ConstructorArgumentValues constructorArguments =
-                                                           beanDefinition.getConstructorArgumentValues();
-            constructorArguments.addIndexedArgumentValue(0,
-                                                         addPackageNames(constructorArguments,
-                                                                         packageNames));
-        }
-        else {
-            GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
-            beanDefinition.setBeanClass(EntityScanPackages.class);
-            beanDefinition.getConstructorArgumentValues()
-                          .addIndexedArgumentValue(0,
-                                                   packageNames.toArray(new String[packageNames.size()]));
-            beanDefinition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
-            registry.registerBeanDefinition(BEAN, beanDefinition);
-        }
-    }
-    
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
                                         BeanDefinitionRegistry registry) {
+        if (!importingClassMetadata.isAnnotated(HbaseTableScan.class.getName())) {
+            log.info("启动类 必须加上 HbaseTableScan 注解");
+        }
+        AnnotationAttributes attributes =
+                                        AnnotationAttributes.fromMap(importingClassMetadata.getAnnotationAttributes(HbaseTableScan.class.getName()));
+        String packageName = attributes.getString("value");
+        try {
+            Set<Class<?>> classSet = getClasses(packageName);
+            for (Class<?> clazz : classSet) {
+                log.info(clazz.getSimpleName());
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
         
     }
     
-    private Set<String> getPackagesToScan(AnnotationMetadata metadata) {
-        AnnotationAttributes attributes =
-                                        AnnotationAttributes.fromMap(metadata.getAnnotationAttributes(HbaseTable.class.getName()));
-        String[] basePackages = attributes.getStringArray("basePackages");
-        Class<?>[] basePackageClasses =
-                                      attributes.getClassArray("basePackageClasses");
-        Set<String> packagesToScan = new LinkedHashSet<>();
-        packagesToScan.addAll(Arrays.asList(basePackages));
-        for (Class<?> basePackageClass : basePackageClasses) {
-            packagesToScan.add(ClassUtils.getPackageName(basePackageClass));
+    private static Set<Class<?>> getClasses(String packageName) throws IOException,
+                                                                ClassNotFoundException {
+        
+        Set<Class<?>> classes = new HashSet<>();
+        String packageDirName = packageName.replace('.', '/');
+        Enumeration<URL> dirs = Thread.currentThread()
+                                      .getContextClassLoader()
+                                      .getResources(packageDirName);
+        while (dirs.hasMoreElements()) {
+            URL url = dirs.nextElement();
+            String protocol = url.getProtocol();
+            if ("file".equals(protocol)) {
+                String filePath = URLDecoder.decode(url.getFile(), "UTF-8");
+                findAndAddClassesInPackageByFile(packageName, filePath, classes);
+            }
+//            else if ("jar".equals(protocol)) {
+//                JarFile jar;
+//                jar = ((JarURLConnection) url.openConnection()).getJarFile();
+//                Enumeration<JarEntry> entries = jar.entries();
+//                while (entries.hasMoreElements()) {
+//                    JarEntry entry = entries.nextElement();
+//                    String name = entry.getName();
+//                    if (name.charAt(0) == '/') {
+//                        name = name.substring(1);
+//                    }
+//                    if (name.startsWith(packageDirName)) {
+//                        int idx = name.lastIndexOf('/');
+//                        if (idx != -1) {
+//                            packageName = name.substring(0, idx).replace('/', '.');
+//                        }
+//                        if ((idx != -1)) {
+//                            if (name.endsWith(".class") && !entry.isDirectory()) {
+//                                String className = name.substring(packageName.length() + 1,
+//                                                                  name.length() - 6);
+//                                classes.add(Class.forName(packageName + '.' + className));
+//                            }
+//                        }
+//                    }
+//                }
+//            }
         }
-        if (packagesToScan.isEmpty()) {
-            String packageName =
-                               ClassUtils.getPackageName(metadata.getClassName());
-            Assert.state(!StringUtils.isEmpty(packageName),
-                         "@HbaseTableScan cannot be used with the default package");
-            return Collections.singleton(packageName);
+        
+        return classes;
+    }
+    
+    private static void findAndAddClassesInPackageByFile(String packageName,
+                                                         String packagePath,
+                                                         Set<Class<?>> classes) {
+        File dir = new File(packagePath);
+        if (!dir.exists() || !dir.isDirectory()) {
+            return;
         }
-        return packagesToScan;
+        File[] dirfiles = dir.listFiles(new FileFilter() {
+            public boolean accept(File file) {
+                return (file.isDirectory()) || (file.getName().endsWith(".class"));
+            }
+        });
+        for (File file : dirfiles) {
+            if (file.isDirectory()) {
+                findAndAddClassesInPackageByFile(packageName + "." + file.getName(),
+                                                 file.getAbsolutePath(),
+                                                 classes);
+            }
+            else {
+                String className = file.getName().substring(0, file.getName().length() - 6);
+                try {
+                    classes.add(Class.forName(packageName + '.' + className));
+                }
+                catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }

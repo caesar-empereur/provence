@@ -1,6 +1,8 @@
 package com.app.model;
 
+import com.app.annotation.HTableColum;
 import com.app.annotation.HbaseTable;
+import com.app.annotation.RowKey;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.Column;
@@ -15,12 +17,18 @@ import java.util.Date;
 @HbaseTable(name = "account")
 @Entity
 public class Account {
-    
+
+    @HTableColum
     private String username;
-    
+
+    @HTableColum
     private Date createAt;
 
+    @RowKey
     private String id;
+
+    @HTableColum
+    private Double balance;
 
     @Id
     @GeneratedValue(generator = "uuid2")
