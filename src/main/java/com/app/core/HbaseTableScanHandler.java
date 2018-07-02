@@ -54,15 +54,13 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar {
                 log.info(clazz.getSimpleName());
             }
         }
-        catch (IOException e) {
+        catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
-        catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        
     }
-    
+
+
+
     private static Set<Class<?>> getClasses(String packageName) throws IOException,
                                                                 ClassNotFoundException {
         
@@ -78,31 +76,31 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar {
                 String filePath = URLDecoder.decode(url.getFile(), "UTF-8");
                 findAndAddClassesInPackageByFile(packageName, filePath, classes);
             }
-//            else if ("jar".equals(protocol)) {
-//                JarFile jar;
-//                jar = ((JarURLConnection) url.openConnection()).getJarFile();
-//                Enumeration<JarEntry> entries = jar.entries();
-//                while (entries.hasMoreElements()) {
-//                    JarEntry entry = entries.nextElement();
-//                    String name = entry.getName();
-//                    if (name.charAt(0) == '/') {
-//                        name = name.substring(1);
-//                    }
-//                    if (name.startsWith(packageDirName)) {
-//                        int idx = name.lastIndexOf('/');
-//                        if (idx != -1) {
-//                            packageName = name.substring(0, idx).replace('/', '.');
-//                        }
-//                        if ((idx != -1)) {
-//                            if (name.endsWith(".class") && !entry.isDirectory()) {
-//                                String className = name.substring(packageName.length() + 1,
-//                                                                  name.length() - 6);
-//                                classes.add(Class.forName(packageName + '.' + className));
-//                            }
-//                        }
-//                    }
-//                }
-//            }
+            // else if ("jar".equals(protocol)) {
+            // JarFile jar;
+            // jar = ((JarURLConnection) url.openConnection()).getJarFile();
+            // Enumeration<JarEntry> entries = jar.entries();
+            // while (entries.hasMoreElements()) {
+            // JarEntry entry = entries.nextElement();
+            // String name = entry.getName();
+            // if (name.charAt(0) == '/') {
+            // name = name.substring(1);
+            // }
+            // if (name.startsWith(packageDirName)) {
+            // int idx = name.lastIndexOf('/');
+            // if (idx != -1) {
+            // packageName = name.substring(0, idx).replace('/', '.');
+            // }
+            // if ((idx != -1)) {
+            // if (name.endsWith(".class") && !entry.isDirectory()) {
+            // String className = name.substring(packageName.length() + 1,
+            // name.length() - 6);
+            // classes.add(Class.forName(packageName + '.' + className));
+            // }
+            // }
+            // }
+            // }
+            // }
         }
         
         return classes;
@@ -116,6 +114,7 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar {
             return;
         }
         File[] dirfiles = dir.listFiles(new FileFilter() {
+            @Override
             public boolean accept(File file) {
                 return (file.isDirectory()) || (file.getName().endsWith(".class"));
             }

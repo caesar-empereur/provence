@@ -13,7 +13,6 @@ gradle4.3, JDK1.8
 ```
 进入工程的根目录，也就是gradle.build的目录, 执行 gradle clean jar命令
 ```
-#hbase-model
 
 JPA-源码研究
 
