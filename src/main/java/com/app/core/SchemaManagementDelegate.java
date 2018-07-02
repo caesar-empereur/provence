@@ -9,6 +9,5 @@ public class SchemaManagementDelegate {
         if (action == InitializingAction.NONE) {
             return;
         }
-
     }
 }
