@@ -52,7 +52,7 @@ sourceSets {
 }
 
 war{
-    baseName='auth'
+    baseName='hbase-model'
 }
 
 dependencies {

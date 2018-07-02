@@ -5,7 +5,7 @@ package com.app.core;
  */
 public enum InitializingAction {
                                 
-    NONE("node"),
+    NONE("none"),
 
     CREATE_ONLY("create_only"),
 
