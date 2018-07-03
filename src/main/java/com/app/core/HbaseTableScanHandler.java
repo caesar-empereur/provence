@@ -12,7 +12,13 @@ import org.springframework.boot.autoconfigure.domain.EntityScanPackages;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.annotation.AnnotationAttributes;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
+import org.springframework.core.type.classreading.MetadataReader;
+import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
@@ -35,9 +41,12 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar {
     
     private Log log = LogFactory.getLog(this.getClass());
     
-    private AnnotationAttributes annotationAttributes;
-    
     private Set<String> packageNames;
+    
+    private static final String CLASS_RESOURCE_PATTERN = "/**/*.class";
+    
+    private static ResourcePatternResolver resourcePatternResolver =
+                                                                   new PathMatchingResourcePatternResolver();
     
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
@@ -48,92 +57,38 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar {
         AnnotationAttributes attributes =
                                         AnnotationAttributes.fromMap(importingClassMetadata.getAnnotationAttributes(HbaseTableScan.class.getName()));
         String packageName = attributes.getString("value");
-        try {
-            Set<Class<?>> classSet = getClasses(packageName);
-            for (Class<?> clazz : classSet) {
-                log.info(clazz.getSimpleName());
-            }
-        }
-        catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        
     }
-
-
-
-    private static Set<Class<?>> getClasses(String packageName) throws IOException,
-                                                                ClassNotFoundException {
+    
+    public static Set<Class> scanPackage(String packageName) throws Exception {
+        String pattern = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX
+                         + ClassUtils.convertClassNameToResourcePath(packageName)
+                         + CLASS_RESOURCE_PATTERN;
+        Resource[] resources = resourcePatternResolver.getResources(pattern);
+        MetadataReaderFactory readerFactory =
+                                            new CachingMetadataReaderFactory(resourcePatternResolver);
         
-        Set<Class<?>> classes = new HashSet<>();
-        String packageDirName = packageName.replace('.', '/');
-        Enumeration<URL> dirs = Thread.currentThread()
-                                      .getContextClassLoader()
-                                      .getResources(packageDirName);
-        while (dirs.hasMoreElements()) {
-            URL url = dirs.nextElement();
-            String protocol = url.getProtocol();
-            if ("file".equals(protocol)) {
-                String filePath = URLDecoder.decode(url.getFile(), "UTF-8");
-                findAndAddClassesInPackageByFile(packageName, filePath, classes);
+        Set<Class> classes = new LinkedHashSet<>();
+        for (Resource resource : resources) {
+            if (resource.isReadable()) {
+                MetadataReader reader = readerFactory.getMetadataReader(resource);
+                String className = reader.getClassMetadata().getClassName();
+                
+                ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+                
+                Class clazz = classLoader.loadClass(className);
+                
+                classes.add(clazz);
             }
-            // else if ("jar".equals(protocol)) {
-            // JarFile jar;
-            // jar = ((JarURLConnection) url.openConnection()).getJarFile();
-            // Enumeration<JarEntry> entries = jar.entries();
-            // while (entries.hasMoreElements()) {
-            // JarEntry entry = entries.nextElement();
-            // String name = entry.getName();
-            // if (name.charAt(0) == '/') {
-            // name = name.substring(1);
-            // }
-            // if (name.startsWith(packageDirName)) {
-            // int idx = name.lastIndexOf('/');
-            // if (idx != -1) {
-            // packageName = name.substring(0, idx).replace('/', '.');
-            // }
-            // if ((idx != -1)) {
-            // if (name.endsWith(".class") && !entry.isDirectory()) {
-            // String className = name.substring(packageName.length() + 1,
-            // name.length() - 6);
-            // classes.add(Class.forName(packageName + '.' + className));
-            // }
-            // }
-            // }
-            // }
-            // }
         }
-        
         return classes;
     }
     
-    private static void findAndAddClassesInPackageByFile(String packageName,
-                                                         String packagePath,
-                                                         Set<Class<?>> classes) {
-        File dir = new File(packagePath);
-        if (!dir.exists() || !dir.isDirectory()) {
-            return;
-        }
-        File[] dirfiles = dir.listFiles(new FileFilter() {
-            @Override
-            public boolean accept(File file) {
-                return (file.isDirectory()) || (file.getName().endsWith(".class"));
-            }
+    public static Set<Htable> resolveModel(Set<Class> classes) {
+        Set<Htable> htables = new LinkedHashSet<>();
+        classes.forEach(clazz -> {
+            clazz.getAnnotations();
         });
-        for (File file : dirfiles) {
-            if (file.isDirectory()) {
-                findAndAddClassesInPackageByFile(packageName + "." + file.getName(),
-                                                 file.getAbsolutePath(),
-                                                 classes);
-            }
-            else {
-                String className = file.getName().substring(0, file.getName().length() - 6);
-                try {
-                    classes.add(Class.forName(packageName + '.' + className));
-                }
-                catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+        return htables;
     }
 }
