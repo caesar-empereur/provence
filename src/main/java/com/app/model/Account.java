@@ -1,6 +1,7 @@
 package com.app.model;
 
 import com.app.annotation.HTableColum;
+import com.app.annotation.HTableColumFamily;
 import com.app.annotation.HbaseTable;
 import com.app.annotation.RowKey;
 import org.hibernate.annotations.GenericGenerator;
@@ -18,9 +19,11 @@ import java.util.Date;
 @Entity
 public class Account {
 
+    @HTableColumFamily("base-info")
     @HTableColum
     private String username;
 
+    @HTableColumFamily("base-info")
     @HTableColum
     private Date createAt;
 

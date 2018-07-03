@@ -13,5 +13,4 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Target({ METHOD, FIELD})
 @Retention(RUNTIME)
 public @interface HTableColum {
-    String name() default "";
 }

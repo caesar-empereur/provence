@@ -1,14 +1,15 @@
 package com.app.core;
 
-import com.app.annotation.HbaseTable;
-import com.app.annotation.HbaseTableScan;
+import java.lang.reflect.Field;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import com.app.annotation.HTableColum;
+import com.app.annotation.HTableColumFamily;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.config.ConstructorArgumentValues;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.GenericBeanDefinition;
-import org.springframework.boot.autoconfigure.domain.EntityScanPackages;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.annotation.AnnotationAttributes;
@@ -19,19 +20,10 @@ import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
-import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
-import org.springframework.util.StringUtils;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.net.JarURLConnection;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.util.*;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
+import com.app.annotation.HbaseTable;
+import com.app.annotation.HbaseTableScan;
 
 /**
  * Created by leon on 2017/4/11.
@@ -57,7 +49,13 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar {
         AnnotationAttributes attributes =
                                         AnnotationAttributes.fromMap(importingClassMetadata.getAnnotationAttributes(HbaseTableScan.class.getName()));
         String packageName = attributes.getString("value");
-        
+        try {
+            Set<Class> classes = scanPackage(packageName);
+            resolveModel(classes);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     
     public static Set<Class> scanPackage(String packageName) throws Exception {
@@ -86,9 +84,31 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar {
     
     public static Set<Htable> resolveModel(Set<Class> classes) {
         Set<Htable> htables = new LinkedHashSet<>();
-        classes.forEach(clazz -> {
-            clazz.getAnnotations();
-        });
+        for (Class clazz : classes) {
+            if (!clazz.isAnnotationPresent(HbaseTable.class)) {
+                continue;
+            }
+            HbaseTable hbaseTable = (HbaseTable) clazz.getAnnotation(HbaseTable.class);
+            
+            String tableName = hbaseTable.name();
+            String rowkey = null;
+            Set<String> cloumns = new HashSet<>();
+            boolean hasColumnFamily = false;
+            
+            Field[] fields = clazz.getFields();
+            for (int i = 0; i < fields.length; i++) {
+                Field field = fields[i];
+                if (field.isAnnotationPresent(com.app.annotation.RowKey.class)) {
+                    rowkey = field.getName();
+                }
+                if (field.isAnnotationPresent(HTableColum.class)) {
+                    cloumns.add(field.getName());
+                }
+                if (field.isAnnotationPresent(HTableColumFamily.class)) {
+                    hasColumnFamily = true;
+                }
+            }
+        }
         return htables;
     }
 }
