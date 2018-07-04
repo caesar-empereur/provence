@@ -1,6 +1,5 @@
 package com.app.core;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -11,24 +10,23 @@ public class Htable {
     
     private String tableName;
     
-    private RowKey rowKey;
+    private String rowKey;
     
-    private Map<String, Set<String>> columnsWithFamily = new LinkedHashMap();
+    private Map<String, Set<String>> columnsWithFamily;
     
-    private Map columnWithoutFamily = new LinkedHashMap();
+    private Set<String> columnWithoutFamily;
     
     private boolean hasColumnFamily;
     
     public Htable(String tableName,
-                  RowKey rowKey,
+                  String rowKey,
                   Map<String, Set<String>> columnsWithFamily,
-                  Map columnWithoutFamily,
-                  boolean hasColumnFamily) {
+                  Set<String> columnWithoutFamily) {
         this.tableName = tableName;
         this.rowKey = rowKey;
         this.columnsWithFamily = columnsWithFamily;
         this.columnWithoutFamily = columnWithoutFamily;
-        this.hasColumnFamily = hasColumnFamily;
+        this.hasColumnFamily = columnsWithFamily == null || columnsWithFamily.isEmpty();
     }
     
     public String getTableName() {
@@ -39,11 +37,11 @@ public class Htable {
         this.tableName = tableName;
     }
     
-    public RowKey getRowKey() {
+    public String getRowKey() {
         return rowKey;
     }
     
-    public void setRowKey(RowKey rowKey) {
+    public void setRowKey(String rowKey) {
         this.rowKey = rowKey;
     }
     
@@ -55,19 +53,19 @@ public class Htable {
         this.columnsWithFamily = columnsWithFamily;
     }
     
-    public Map getColumnWithoutFamily() {
-        return columnWithoutFamily;
-    }
-    
-    public void setColumnWithoutFamily(Map columnWithoutFamily) {
-        this.columnWithoutFamily = columnWithoutFamily;
-    }
-    
     public boolean isHasColumnFamily() {
         return hasColumnFamily;
     }
     
     public void setHasColumnFamily(boolean hasColumnFamily) {
         this.hasColumnFamily = hasColumnFamily;
+    }
+    
+    public Set<String> getColumnWithoutFamily() {
+        return columnWithoutFamily;
+    }
+    
+    public void setColumnWithoutFamily(Set<String> columnWithoutFamily) {
+        this.columnWithoutFamily = columnWithoutFamily;
     }
 }

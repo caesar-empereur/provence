@@ -15,19 +15,15 @@ public class User {
     @RowKey
     private String id;
 
-    @ColumnFamily(name = "base-info")
     @HTableColum
     private String username;
     
-    @ColumnFamily(name = "base-info")
     @HTableColum
     private String password;
     
-    @ColumnFamily(name = "contact-info")
     @HTableColum
     private String phone;
     
-    @ColumnFamily(name = "contact-info")
     @HTableColum
     private String email;
     

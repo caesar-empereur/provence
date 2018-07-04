@@ -1,12 +1,10 @@
 package com.app.core;
 
 import java.lang.reflect.Field;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
-import com.app.annotation.HTableColum;
-import com.app.annotation.ColumnFamily;
+import com.app.annotation.*;
+import com.app.exception.ConfigurationException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -21,9 +19,6 @@ import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.util.ClassUtils;
-
-import com.app.annotation.HbaseTable;
-import com.app.annotation.HbaseTableScan;
 
 /**
  * Created by leon on 2017/4/11.
@@ -92,7 +87,7 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar {
             
             String tableName = hbaseTable.name();
             String rowkey = null;
-            Set<String> cloumns = new HashSet<>();
+            Set<String> columnsWithField = new HashSet<>();
             boolean hasColumnFamily = false;
             
             Field[] fields = clazz.getFields();
@@ -102,12 +97,38 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar {
                     rowkey = field.getName();
                 }
                 if (field.isAnnotationPresent(HTableColum.class)) {
-                    cloumns.add(field.getName());
+                    columnsWithField.add(field.getName());
                 }
                 if (field.isAnnotationPresent(ColumnFamily.class)) {
                     hasColumnFamily = true;
                 }
             }
+            
+            Map<String, Set<String>> columnFamilySaved = new HashMap<>();
+            if (clazz.isAnnotationPresent(CompoundColumFamily.class)) {
+                CompoundColumFamily compoundColumFamily =
+                                                        (CompoundColumFamily) clazz.getAnnotation(CompoundColumFamily.class);
+                ColumnFamily[] columnFamilies = compoundColumFamily.columnFamily();
+                List<String> columnListSaved = new ArrayList<>();
+                for (int i = 0; i < columnFamilies.length; i++) {
+                    ColumnFamily columnFamily = columnFamilies[i];
+                    String[] columnList = columnFamily.columnList();
+                    columnFamilySaved.put(columnFamily.name(),
+                                          new HashSet<>(Arrays.asList(columnList)));
+                    columnListSaved.addAll(Arrays.asList(columnList));
+                }
+                if (columnListSaved.size() != new HashSet<String>(columnListSaved).size()) {
+                    throw new ConfigurationException("不同 column family 出现重复的字段");
+                }
+                columnListSaved.forEach(column -> {
+                    if (columnsWithField.contains(column)) {
+                        throw new ConfigurationException(column + " 配置的字段在类中找不到对应的字段");
+                    }
+                });
+            }
+            
+            Htable htable = new Htable(tableName, rowkey, columnFamilySaved, columnsWithField);
+            htables.add(htable);
         }
         return htables;
     }
