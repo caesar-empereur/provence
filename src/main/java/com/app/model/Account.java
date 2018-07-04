@@ -1,9 +1,6 @@
 package com.app.model;
 
-import com.app.annotation.HTableColum;
-import com.app.annotation.HTableColumFamily;
-import com.app.annotation.HbaseTable;
-import com.app.annotation.RowKey;
+import com.app.annotation.*;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.Column;
@@ -16,23 +13,24 @@ import java.util.Date;
  * Created by leon on 2018/4/11.
  */
 @HbaseTable(name = "account")
+@CompoundColumFamily(columnFamily = { @ColumnFamily(name = "base-info", columnList = { "username", "id" }, unique = true),
+                                      @ColumnFamily(name = "balance-info", columnList = { "balance" }, unique = true) },
+                                        constraint = true)
 @Entity
 public class Account {
-
-    @HTableColumFamily("base-info")
+    
     @HTableColum
     private String username;
-
-    @HTableColumFamily("base-info")
+    
     @HTableColum
     private Date createAt;
-
+    
     @RowKey
     private String id;
-
+    
     @HTableColum
     private Double balance;
-
+    
     @Id
     @GeneratedValue(generator = "uuid2")
     @GenericGenerator(name = "uuid2", strategy = "uuid2")
@@ -40,11 +38,11 @@ public class Account {
     public String getId() {
         return id;
     }
-
+    
     public void setId(String id) {
         this.id = id;
     }
-
+    
     public String getUsername() {
         return username;
     }

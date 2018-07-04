@@ -1,7 +1,7 @@
 package com.app.model;
 
 import com.app.annotation.HTableColum;
-import com.app.annotation.HTableColumFamily;
+import com.app.annotation.ColumnFamily;
 import com.app.annotation.HbaseTable;
 import com.app.annotation.RowKey;
 
@@ -15,19 +15,19 @@ public class User {
     @RowKey
     private String id;
 
-    @HTableColumFamily(name = "base-info")
+    @ColumnFamily(name = "base-info")
     @HTableColum
     private String username;
     
-    @HTableColumFamily(name = "base-info")
+    @ColumnFamily(name = "base-info")
     @HTableColum
     private String password;
     
-    @HTableColumFamily(name = "contact-info")
+    @ColumnFamily(name = "contact-info")
     @HTableColum
     private String phone;
     
-    @HTableColumFamily(name = "contact-info")
+    @ColumnFamily(name = "contact-info")
     @HTableColum
     private String email;
     

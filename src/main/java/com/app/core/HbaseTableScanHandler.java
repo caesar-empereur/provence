@@ -6,7 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import com.app.annotation.HTableColum;
-import com.app.annotation.HTableColumFamily;
+import com.app.annotation.ColumnFamily;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -104,7 +104,7 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar {
                 if (field.isAnnotationPresent(HTableColum.class)) {
                     cloumns.add(field.getName());
                 }
-                if (field.isAnnotationPresent(HTableColumFamily.class)) {
+                if (field.isAnnotationPresent(ColumnFamily.class)) {
                     hasColumnFamily = true;
                 }
             }
