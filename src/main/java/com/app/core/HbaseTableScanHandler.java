@@ -88,8 +88,7 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar {
             String tableName = hbaseTable.name();
             String rowkey = null;
             Set<String> columnsWithField = new HashSet<>();
-            boolean hasColumnFamily = false;
-            
+
             Field[] fields = clazz.getFields();
             for (int i = 0; i < fields.length; i++) {
                 Field field = fields[i];
@@ -98,9 +97,6 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar {
                 }
                 if (field.isAnnotationPresent(HTableColum.class)) {
                     columnsWithField.add(field.getName());
-                }
-                if (field.isAnnotationPresent(ColumnFamily.class)) {
-                    hasColumnFamily = true;
                 }
             }
             
