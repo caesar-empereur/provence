@@ -1,9 +1,13 @@
 package com.hbase.core;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.hbase.annotation.*;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -29,8 +33,6 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar {
     
     private Log log = LogFactory.getLog(this.getClass());
     
-    private Set<String> packageNames;
-    
     private static final String CLASS_RESOURCE_PATTERN = "/**/*.class";
     
     private static ResourcePatternResolver resourcePatternResolver =
@@ -45,88 +47,82 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar {
         AnnotationAttributes attributes =
                                         AnnotationAttributes.fromMap(importingClassMetadata.getAnnotationAttributes(HbaseTableScan.class.getName()));
         String packageName = attributes.getString("value");
-        try {
-            Set<Class> classes = scanPackage(packageName);
-            resolveModel(classes);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+        
+        Set<Class> classes = scanPackage(packageName);
+        Set<Htable> htables = classes.stream()
+                                     .filter(clazz -> clazz.isAnnotationPresent(HbaseTable.class))
+                                     .map(this::resolveAnnotationClass)
+                                     .collect(Collectors.toSet());
     }
     
-    public static Set<Class> scanPackage(String packageName) throws Exception {
+    private static Set<Class> scanPackage(String packageName) {
+        Set<Class> classes = new LinkedHashSet<>();
+        
         String pattern = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX
                          + ClassUtils.convertClassNameToResourcePath(packageName)
                          + CLASS_RESOURCE_PATTERN;
-        Resource[] resources = resourcePatternResolver.getResources(pattern);
+        Resource[] resources = new Resource[0];
+        try {
+            resources = resourcePatternResolver.getResources(pattern);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
         MetadataReaderFactory readerFactory =
                                             new CachingMetadataReaderFactory(resourcePatternResolver);
-        
-        Set<Class> classes = new LinkedHashSet<>();
-        for (Resource resource : resources) {
-            if (resource.isReadable()) {
+        Stream.of(resources).filter(Resource::isReadable).forEach(resource -> {
+            Class clazz = null;
+            try {
                 MetadataReader reader = readerFactory.getMetadataReader(resource);
                 String className = reader.getClassMetadata().getClassName();
-                
                 ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-                
-                Class clazz = classLoader.loadClass(className);
-                
-                classes.add(clazz);
+                clazz = classLoader.loadClass(className);
             }
-        }
+            catch (IOException | ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+            classes.add(clazz);
+        });
         return classes;
     }
     
-    public static Set<Htable> resolveModel(Set<Class> classes) {
-        Set<Htable> htables = new LinkedHashSet<>();
-        for (Class clazz : classes) {
-            if (!clazz.isAnnotationPresent(HbaseTable.class)) {
-                continue;
+    private Htable resolveAnnotationClass(Class clazz) {
+        HbaseTable hbaseTable = (HbaseTable) clazz.getAnnotation(HbaseTable.class);
+        String tableName = hbaseTable.name();
+        String rowkey = null;
+        
+        for (Field field : Arrays.asList(clazz.getFields())) {
+            if (field.isAnnotationPresent(com.hbase.annotation.RowKey.class)) {
+                rowkey = field.getName();
             }
-            HbaseTable hbaseTable = (HbaseTable) clazz.getAnnotation(HbaseTable.class);
-            
-            String tableName = hbaseTable.name();
-            String rowkey = null;
-            Set<String> columnsWithField = new HashSet<>();
-
-            Field[] fields = clazz.getFields();
-            for (int i = 0; i < fields.length; i++) {
-                Field field = fields[i];
-                if (field.isAnnotationPresent(com.hbase.annotation.RowKey.class)) {
-                    rowkey = field.getName();
-                }
-                if (field.isAnnotationPresent(HTableColum.class)) {
-                    columnsWithField.add(field.getName());
-                }
-            }
-            
-            Map<String, Set<String>> columnFamilySaved = new HashMap<>();
-            if (clazz.isAnnotationPresent(CompoundColumFamily.class)) {
-                CompoundColumFamily compoundColumFamily =
-                                                        (CompoundColumFamily) clazz.getAnnotation(CompoundColumFamily.class);
-                ColumnFamily[] columnFamilies = compoundColumFamily.columnFamily();
-                List<String> columnListSaved = new ArrayList<>();
-                for (int i = 0; i < columnFamilies.length; i++) {
-                    ColumnFamily columnFamily = columnFamilies[i];
-                    String[] columnList = columnFamily.columnList();
-                    columnFamilySaved.put(columnFamily.name(),
-                                          new HashSet<>(Arrays.asList(columnList)));
-                    columnListSaved.addAll(Arrays.asList(columnList));
-                }
-                if (columnListSaved.size() != new HashSet<String>(columnListSaved).size()) {
-                    throw new ConfigurationException("不同 column family 出现重复的字段");
-                }
-                columnListSaved.forEach(column -> {
-                    if (columnsWithField.contains(column)) {
-                        throw new ConfigurationException(column + " 配置的字段在类中找不到对应的字段");
-                    }
-                });
-            }
-            
-            Htable htable = new Htable(tableName, rowkey, columnFamilySaved, columnsWithField);
-            htables.add(htable);
         }
-        return htables;
+        if (StringUtils.isBlank(rowkey)) {
+            throw new ConfigurationException("必须配置 rowkey 字段");
+        }
+        Set<String> columnsWithField =
+                                     Stream.of(clazz.getFields())
+                                           .filter(field -> field.isAnnotationPresent(HTableColum.class))
+                                           .map(Field::getName)
+                                           .collect(Collectors.toSet());
+        Map<String, Set<String>> columnFamilyMap = new HashMap<>();
+        if (clazz.isAnnotationPresent(CompoundColumFamily.class)) {
+            CompoundColumFamily compoundColumFamily =
+                                                    (CompoundColumFamily) clazz.getAnnotation(CompoundColumFamily.class);
+            List<String> columnListConfiged = new ArrayList<>();
+            Stream.of(compoundColumFamily.columnFamily()).forEach(columnFamily -> {
+                columnFamilyMap.put(columnFamily.name(),
+                                    new HashSet<>(Arrays.asList(columnFamily.columnList())));
+                columnListConfiged.addAll(Arrays.asList(columnFamily.columnList()));
+            });
+            if (columnListConfiged.size() != new HashSet<>(columnListConfiged).size()) {
+                throw new ConfigurationException("不同 column family 出现重复的字段");
+            }
+            columnListConfiged.forEach(column -> {
+                if (columnsWithField.contains(column)) {
+                    throw new ConfigurationException(column + " 配置的column在类中找不到对应的字段");
+                }
+            });
+        }
+        return new Htable(tableName, rowkey, columnFamilyMap, columnsWithField);
     }
 }

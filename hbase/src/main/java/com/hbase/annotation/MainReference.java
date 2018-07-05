@@ -17,6 +17,7 @@ public class MainReference {
         };
         
         // Comparator<Integer> comparator = (x, y) -> Integer.compare(x, y);
+//         Comparator<Integer> comparator1 = (x, y) -> x.compareTo(y);
         
         Comparator<Integer> comparator = Integer::compare;
         System.out.println(comparator.compare(1, 2));
