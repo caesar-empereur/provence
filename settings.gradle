@@ -1,2 +1,4 @@
 rootProject.name = 'hbase-model'
+include 'app'
+include 'hbase'
 

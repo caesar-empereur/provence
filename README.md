@@ -11,7 +11,8 @@ gradle4.3, JDK1.8
 ```
 * 代码check下来后编译jar包的方式
 ```
-进入工程的根目录，也就是gradle.build的目录, 执行 gradle clean jar命令
+进入工程的根目录，也就是gradle.build的目录, 执行 gradle clean bootWar命令
+编译工程, 生成依赖的 jar 包和可启动的 war 包
 ```
 
 JPA-源码研究
