@@ -30,3 +30,6 @@ DefaultPersistenceUnitManager
 .preparePersistenceUnitInfos()
 
 MergingPersistenceUnitManager
+
+JavaReflectionManager.toXClass()
+
