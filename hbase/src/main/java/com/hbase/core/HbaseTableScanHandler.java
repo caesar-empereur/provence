@@ -47,7 +47,7 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar, Res
     public void registerBeanDefinitions(AnnotationMetadata metadata,
                                         BeanDefinitionRegistry registry) {
         if (!metadata.isAnnotated(HbaseTableScan.class.getName())) {
-            log.info("bootstrap must config @HbaseTableScan");
+            log.info("bootstrap class must config @HbaseTableScan");
         }
         AnnotationAttributes attributes =
                                         AnnotationAttributes.fromMap(metadata.getAnnotationAttributes(HbaseTableScan.class.getName()));
@@ -58,6 +58,7 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar, Res
                                      .filter(clazz -> clazz.isAnnotationPresent(HbaseTable.class))
                                      .map(this::resolveAnnotationClass)
                                      .collect(Collectors.toSet());
+        log.info(htables.toArray());
     }
     
     private Set<Class> scanPackage(String packageName) {
@@ -66,7 +67,7 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar, Res
         String pattern = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX
                          + ClassUtils.convertClassNameToResourcePath(packageName)
                          + CLASS_RESOURCE_PATTERN;
-        Resource[] resources = new Resource[0];
+        Resource[] resources;
         try {
             resources = this.resourcePatternResolver.getResources(pattern);
         }
@@ -95,7 +96,7 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar, Res
         String tableName = hbaseTable.name();
         String rowkey = null;
         
-        for (Field field : Arrays.asList(clazz.getFields())) {
+        for (Field field : Arrays.asList(clazz.getDeclaredFields())) {
             if (field.isAnnotationPresent(com.hbase.annotation.RowKey.class)) {
                 rowkey = field.getName();
             }
@@ -104,7 +105,7 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar, Res
             throw new ConfigurationException("must config rowkey field");
         }
         Set<String> columnsWithField =
-                                     Stream.of(clazz.getFields())
+                                     Stream.of(clazz.getDeclaredFields())
                                            .filter(field -> field.isAnnotationPresent(HTableColum.class))
                                            .map(Field::getName)
                                            .collect(Collectors.toSet());
@@ -122,7 +123,7 @@ public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar, Res
                 throw new ConfigurationException("differnet column family has reduplicated field");
             }
             columnListConfiged.forEach(column -> {
-                if (columnsWithField.contains(column)) {
+                if (!columnsWithField.contains(column)) {
                     throw new ConfigurationException(column
                                                      + " config column list can not be found on class");
                 }

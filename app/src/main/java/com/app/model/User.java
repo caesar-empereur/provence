@@ -8,7 +8,7 @@ import com.hbase.annotation.RowKey;
  * Created by yang on 2018/6/10.
  */
 
-@HbaseTable(name = "user")
+//@HbaseTable(name = "user")
 public class User {
     
     @RowKey

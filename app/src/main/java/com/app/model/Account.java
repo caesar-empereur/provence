@@ -19,6 +19,7 @@ public class Account {
     private Date createAt;
     
     @RowKey
+    @HTableColum
     private String id;
     
     @HTableColum
