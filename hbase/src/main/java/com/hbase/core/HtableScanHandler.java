@@ -32,7 +32,7 @@ import com.hbase.exception.ConfigurationException;
  * Created by leon on 2017/4/11.
  */
 @Configuration
-public class HbaseTableScanHandler implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
+public class HtableScanHandler implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
     
     private Log log = LogFactory.getLog(this.getClass());
     

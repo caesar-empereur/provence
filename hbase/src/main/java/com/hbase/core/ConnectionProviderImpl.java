@@ -1,46 +1,64 @@
 package com.hbase.core;
 
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import javax.annotation.Resource;
-
-import org.apache.hadoop.conf.Configuration;
+import com.hbase.config.ConnectionSizeConfig;
 import org.apache.hadoop.hbase.Stoppable;
 import org.apache.hadoop.hbase.client.Connection;
+import org.springframework.beans.factory.InitializingBean;
+
+import javax.annotation.Resource;
 
 /**
  * @author yingyang
  * @date 2018/7/11.
  */
-public class ConnectionProviderImpl implements ConnectionProvider, Stoppable {
+public class ConnectionProviderImpl implements ConnectionProvider, Stoppable, InitializingBean {
     
     private boolean active = true;
     
     private ScheduledExecutorService executorService;
     
-    private PooledConnections pool;
-
+    private PooledConnections pooledConnections;
+    
     @Resource
-    private HbaseConfigProvider hbaseConfig;
-
-    private Configuration configuration;
-
+    private ConnectionSizeConfig connectionSizeConfig;
+    
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        pooledConnections = buildPool();
+        final long validationInterval = connectionSizeConfig.getInterval().longValue();
+        executorService = Executors.newSingleThreadScheduledExecutor();
+        executorService.scheduleWithFixedDelay(() -> pooledConnections.validate(),
+                                               validationInterval,
+                                               validationInterval,
+                                               TimeUnit.SECONDS);
+    }
+    
     @Override
     public Connection getConnection() {
         if (!active) {
-            throw new IllegalStateException("Connection pool is no longer active");
+            throw new IllegalStateException("Connection pooledConnections is no longer active");
         }
-        return pool.poll();
+        return pooledConnections.poll();
     }
-
-
-
+    
+    private PooledConnections buildPool() {
+        PooledConnections.Builder builder = new PooledConnections.Builder();
+        builder.initialSize(connectionSizeConfig.getInitSize());
+        builder.minSize(connectionSizeConfig.getMinSize());
+        builder.maxSize(connectionSizeConfig.getMaxSize());
+        return builder.build();
+    }
+    
     @Override
     public void closeConnection(Connection conn) {
         if (conn == null) {
             return;
         }
-        pool.add(conn);
+        pooledConnections.add(conn);
     }
     
     @Override
@@ -53,7 +71,7 @@ public class ConnectionProviderImpl implements ConnectionProvider, Stoppable {
             executorService.shutdown();
         }
         executorService = null;
-        pool.close();
+        pooledConnections.close();
     }
     
     @Override

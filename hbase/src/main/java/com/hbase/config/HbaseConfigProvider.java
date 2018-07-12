@@ -1,4 +1,4 @@
-package com.hbase.core;
+package com.hbase.config;
 
 /**
  * @author yingyang

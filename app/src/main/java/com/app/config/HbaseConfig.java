@@ -1,6 +1,6 @@
 package com.app.config;
 
-import com.hbase.core.HbaseConfigProvider;
+import com.hbase.config.HbaseConfigProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 

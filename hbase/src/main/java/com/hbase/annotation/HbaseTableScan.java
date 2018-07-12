@@ -4,7 +4,7 @@ import java.lang.annotation.*;
 
 import org.springframework.context.annotation.Import;
 
-import com.hbase.core.HbaseTableScanHandler;
+import com.hbase.core.HtableScanHandler;
 
 /**
  * Created by leon on 2018/4/11.
@@ -12,7 +12,7 @@ import com.hbase.core.HbaseTableScanHandler;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Import(HbaseTableScanHandler.class)
+@Import(HtableScanHandler.class)
 public @interface HbaseTableScan {
 
     String value() default "";
