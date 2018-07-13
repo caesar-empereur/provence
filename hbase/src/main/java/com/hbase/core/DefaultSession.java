@@ -16,7 +16,7 @@ public final class DefaultSession extends DefaultTableManager implements Session
     
     private transient Connection connection;
 
-    private transient ConnectionPool hbaseConnectionPool;
+    private transient ConnectionProvider ConnectionProvider;
     
     @Override
     public Connection disconnect() {
@@ -25,7 +25,7 @@ public final class DefaultSession extends DefaultTableManager implements Session
     
     @Override
     public Connection connection() {
-        return hbaseConnectionPool.getConnection();
+        return ConnectionProvider.getConnection();
     }
     
     private void checkOpenOrWaitingForAutoClose() {
