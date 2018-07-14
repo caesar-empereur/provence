@@ -11,7 +11,6 @@ import com.hbase.annotation.RowKey;
 //@HbaseTable(name = "user")
 public class User {
     
-    @RowKey
     private String id;
 
     @HTableColum

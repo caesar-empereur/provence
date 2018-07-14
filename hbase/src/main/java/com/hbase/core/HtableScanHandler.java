@@ -6,9 +6,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.hbase.annotation.*;
-import com.hbase.exception.ParseException;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -26,7 +23,9 @@ import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.util.ClassUtils;
 
+import com.hbase.annotation.*;
 import com.hbase.exception.ConfigurationException;
+import com.hbase.exception.ParseException;
 
 /**
  * Created by leon on 2017/4/11.
@@ -56,6 +55,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
         Set<Class> classes = scanPackage(packageName);
         Set<Htable> htables = classes.stream()
                                      .filter(clazz -> clazz.isAnnotationPresent(HbaseTable.class))
+                                     .filter(clazz -> clazz.isAnnotationPresent(RowKey.class))
                                      .map(this::resolveAnnotationClass)
                                      .collect(Collectors.toSet());
         log.info(htables.toArray());
@@ -94,16 +94,8 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     private Htable resolveAnnotationClass(Class clazz) {
         HbaseTable hbaseTable = (HbaseTable) clazz.getAnnotation(HbaseTable.class);
         String tableName = hbaseTable.name();
-        String rowkey = null;
-        
-        for (Field field : Arrays.asList(clazz.getDeclaredFields())) {
-            if (field.isAnnotationPresent(com.hbase.annotation.RowKey.class)) {
-                rowkey = field.getName();
-            }
-        }
-        if (StringUtils.isBlank(rowkey)) {
-            throw new ConfigurationException("must config rowkey field");
-        }
+        RowKey rowKey = (RowKey) clazz.getAnnotation(RowKey.class);
+        Set<String> rowkeyColumns = new HashSet<>(Arrays.asList(rowKey.columnList()));
         Set<String> columnsWithField =
                                      Stream.of(clazz.getDeclaredFields())
                                            .filter(field -> field.isAnnotationPresent(HTableColum.class))
@@ -129,7 +121,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                 }
             });
         }
-        return new Htable(tableName, rowkey, columnFamilyMap, columnsWithField);
+        return new Htable(tableName, rowkeyColumns, columnFamilyMap, columnsWithField);
     }
     
     @Override

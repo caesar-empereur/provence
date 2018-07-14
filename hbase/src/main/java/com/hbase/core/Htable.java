@@ -1,16 +1,17 @@
 package com.hbase.core;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * Created by leon on 2018/4/19.
  */
-public class Htable {
+public class Htable implements Serializable{
     
     private String tableName;
     
-    private String rowKey;
+    private Set<String> rowKeyColumns;
     
     private Map<String, Set<String>> columnsWithFamily;
     
@@ -19,11 +20,11 @@ public class Htable {
     private boolean hasColumnFamily;
     
     public Htable(String tableName,
-                  String rowKey,
+                  Set<String> rowKeyColumns,
                   Map<String, Set<String>> columnsWithFamily,
                   Set<String> columnWithoutFamily) {
         this.tableName = tableName;
-        this.rowKey = rowKey;
+        this.rowKeyColumns = rowKeyColumns;
         this.columnsWithFamily = columnsWithFamily;
         this.columnWithoutFamily = columnWithoutFamily;
         this.hasColumnFamily = columnsWithFamily == null || columnsWithFamily.isEmpty();
@@ -36,15 +37,15 @@ public class Htable {
     public void setTableName(String tableName) {
         this.tableName = tableName;
     }
-    
-    public String getRowKey() {
-        return rowKey;
+
+    public Set<String> getRowKeyColumns() {
+        return rowKeyColumns;
     }
-    
-    public void setRowKey(String rowKey) {
-        this.rowKey = rowKey;
+
+    public void setRowKeyColumns(Set<String> rowKeyColumns) {
+        this.rowKeyColumns = rowKeyColumns;
     }
-    
+
     public Map<String, Set<String>> getColumnsWithFamily() {
         return columnsWithFamily;
     }
@@ -82,7 +83,7 @@ public class Htable {
             return false;
         if (tableName != null ? !tableName.equals(htable.tableName) : htable.tableName != null)
             return false;
-        if (rowKey != null ? !rowKey.equals(htable.rowKey) : htable.rowKey != null)
+        if (rowKeyColumns != null ? !rowKeyColumns.equals(htable.rowKeyColumns) : htable.rowKeyColumns != null)
             return false;
         if (columnsWithFamily != null ? !columnsWithFamily.equals(htable.columnsWithFamily)
                                       : htable.columnsWithFamily != null)
@@ -94,7 +95,7 @@ public class Htable {
     @Override
     public int hashCode() {
         int result = tableName != null ? tableName.hashCode() : 0;
-        result = 31 * result + (rowKey != null ? rowKey.hashCode() : 0);
+        result = 31 * result + (rowKeyColumns != null ? rowKeyColumns.hashCode() : 0);
         result = 31 * result + (columnsWithFamily != null ? columnsWithFamily.hashCode() : 0);
         result = 31 * result + (columnWithoutFamily != null ? columnWithoutFamily.hashCode() : 0);
         result = 31 * result + (hasColumnFamily ? 1 : 0);
@@ -107,7 +108,7 @@ public class Htable {
                + tableName
                + '\''
                + ", rowKey='"
-               + rowKey
+               + rowKeyColumns
                + '\''
                + ", columnsWithFamily="
                + columnsWithFamily

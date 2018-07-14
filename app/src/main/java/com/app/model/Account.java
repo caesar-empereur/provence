@@ -10,6 +10,7 @@ import com.hbase.annotation.*;
 @HbaseTable(name = "account")
 @CompoundColumFamily(columnFamily = { @ColumnFamily(name = "base-info", columnList = { "username", "id" }, unique = true),
                                       @ColumnFamily(name = "balance-info", columnList = { "balance" }, unique = true) }, constraint = true)
+@RowKey(columnList = {"id"})
 public class Account {
     
     @HTableColum
@@ -18,7 +19,6 @@ public class Account {
     @HTableColum
     private Date createAt;
     
-    @RowKey
     @HTableColum
     private String id;
     
