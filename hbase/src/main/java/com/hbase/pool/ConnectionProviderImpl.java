@@ -1,4 +1,4 @@
-package com.hbase.core;
+package com.hbase.pool;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;

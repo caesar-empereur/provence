@@ -54,8 +54,8 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
         
         Set<Class> classes = scanPackage(packageName);
         Set<Htable> htables = classes.stream()
-                                     .filter(clazz -> clazz.isAnnotationPresent(HbaseTable.class))
-                                     .filter(clazz -> clazz.isAnnotationPresent(RowKey.class))
+                                     .filter(clazz -> clazz.isAnnotationPresent(HbaseTable.class)
+                                                      && clazz.isAnnotationPresent(RowKey.class))
                                      .map(this::resolveAnnotationClass)
                                      .collect(Collectors.toSet());
         log.info(htables.toArray());
