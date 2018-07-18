@@ -1,10 +1,12 @@
-package com.hbase.pool;
+package com.hbase.pool.hibernate;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.hbase.config.ConnectionSizeConfig;
+import com.hbase.pool.hibernate.ConnectionProvider;
+import com.hbase.pool.hibernate.PooledConnections;
 import org.apache.hadoop.hbase.Stoppable;
 import org.apache.hadoop.hbase.client.Connection;
 import org.springframework.beans.factory.InitializingBean;
@@ -17,7 +19,7 @@ import javax.annotation.Resource;
  */
 public class ConnectionProviderImpl implements ConnectionProvider, Stoppable, InitializingBean {
     
-    private boolean active = true;
+    private boolean active = false;
     
     private ScheduledExecutorService executorService;
     

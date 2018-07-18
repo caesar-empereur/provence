@@ -1,4 +1,4 @@
-package com.hbase.pool;
+package com.hbase.pool.hibernate;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;

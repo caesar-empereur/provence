@@ -1,4 +1,4 @@
-package com.hbase.pool;
+package com.hbase.pool.hibernate;
 
 import java.util.concurrent.Semaphore;
 
@@ -7,7 +7,8 @@ import java.util.concurrent.Semaphore;
  */
 public class PoolLock {
     
-    public static final PoolLock SUSPEND_RESUME_LOCK = new PoolLock();
+    public static final PoolLock
+            SUSPEND_RESUME_LOCK = new PoolLock();
     
     private static final int MAX_PERMITS = 10000;
     
