@@ -5,27 +5,29 @@ import java.util.concurrent.Semaphore;
 /**
  * Created by yang on 2018/7/14.
  */
-public class PoolLock {
+public class PoolAccessLock {
     
-    public static final PoolLock SUSPEND_RESUME_LOCK = new PoolLock();
+    public static final PoolAccessLock SUSPEND_RESUME_LOCK = new PoolAccessLock();
     
     /**
-     * 并发的信号量中一共有 10000 个许可, 同一时间只有10000个线程能执行 acquire release 之间的代码,
-     * 但不能保证线程安全
+     * 并发的信号量中一共有 10000 个许可, 同一时间只有10000个线程能执行
+     * acquire release 之间的代码, 但不能保证线程安全
      */
     private static final int MAX_PERMITS = 10000;
-    
-    // 使用该类是为了限制线程并发的数量
+
+    /**
+     * 使用该类是为了限制线程并发的数量
+     */
     private final Semaphore acquisitionSemaphore;
     
     /**
      * Default constructor
      */
-    private PoolLock() {
+    private PoolAccessLock() {
         this(true);
     }
     
-    private PoolLock(final boolean createSemaphore) {
+    private PoolAccessLock(final boolean createSemaphore) {
         acquisitionSemaphore = (createSemaphore ? new Semaphore(MAX_PERMITS, true) : null);
     }
     

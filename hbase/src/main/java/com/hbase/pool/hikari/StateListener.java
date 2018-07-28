@@ -1,4 +1,4 @@
-package com.hbase.pool;
+package com.hbase.pool.hikari;
 
 /**
  * Created by yang on 2018/7/14.

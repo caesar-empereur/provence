@@ -18,9 +18,9 @@ import javax.annotation.Resource;
  * @author yingyang
  * @date 2018/7/11.
  */
-public class PooledConnections implements InitializingBean {
+public class ConnectionPool implements InitializingBean {
     
-    private static final Log log = LogFactory.getLog(PooledConnections.class);
+    private static final Log log = LogFactory.getLog(ConnectionPool.class);
     
     private final int minSize, maxSize;
     
@@ -91,7 +91,7 @@ public class PooledConnections implements InitializingBean {
         availableConnections.offer(conn);
     }
 
-    private PooledConnections(Builder builder) {
+    private ConnectionPool(Builder builder) {
         maxSize = builder.maxSize;
         minSize = builder.minSize;
         addConnections(builder.initialSize);
@@ -158,8 +158,8 @@ public class PooledConnections implements InitializingBean {
             return this;
         }
 
-        public PooledConnections build() {
-            return new PooledConnections(this);
+        public ConnectionPool build() {
+            return new ConnectionPool(this);
         }
     }
 }

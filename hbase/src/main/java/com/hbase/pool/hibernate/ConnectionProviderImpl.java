@@ -5,8 +5,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.hbase.config.ConnectionSizeConfig;
-import com.hbase.pool.hibernate.ConnectionProvider;
-import com.hbase.pool.hibernate.PooledConnections;
 import org.apache.hadoop.hbase.Stoppable;
 import org.apache.hadoop.hbase.client.Connection;
 import org.springframework.beans.factory.InitializingBean;
@@ -23,7 +21,7 @@ public class ConnectionProviderImpl implements ConnectionProvider, Stoppable, In
     
     private ScheduledExecutorService executorService;
     
-    private PooledConnections pooledConnections;
+    private ConnectionPool pooledConnections;
     
     @Resource
     private ConnectionSizeConfig connectionSizeConfig;
@@ -47,8 +45,8 @@ public class ConnectionProviderImpl implements ConnectionProvider, Stoppable, In
         return pooledConnections.poll();
     }
     
-    private PooledConnections buildPool() {
-        PooledConnections.Builder builder = new PooledConnections.Builder();
+    private ConnectionPool buildPool() {
+        ConnectionPool.Builder builder = new ConnectionPool.Builder();
         builder.initialSize(connectionSizeConfig.getInitSize());
         builder.minSize(connectionSizeConfig.getMinSize());
         builder.maxSize(connectionSizeConfig.getMaxSize());

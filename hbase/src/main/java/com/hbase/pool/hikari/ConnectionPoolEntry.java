@@ -1,4 +1,4 @@
-package com.hbase.pool;
+package com.hbase.pool.hikari;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
