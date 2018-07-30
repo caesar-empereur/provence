@@ -33,6 +33,7 @@ MergingPersistenceUnitManager
 
 JavaReflectionManager.toXClass()
 
+
 ConcurrentBag
 .requited() 回报, 发生在链接关闭的时候
 .borrow() 借链接, 发生在获取连接的时候
