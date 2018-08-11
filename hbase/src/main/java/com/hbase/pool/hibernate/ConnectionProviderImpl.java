@@ -5,6 +5,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.hbase.config.ConnectionSizeConfig;
+import com.hbase.pool.ConnectionProvider;
 import org.apache.hadoop.hbase.Stoppable;
 import org.apache.hadoop.hbase.client.Connection;
 import org.springframework.beans.factory.InitializingBean;

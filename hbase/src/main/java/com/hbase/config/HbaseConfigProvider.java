@@ -9,4 +9,12 @@ public interface HbaseConfigProvider {
     String getHbaseName();
 
     String getHbaseValue();
+
+    int getMaxPoolSize();
+
+    int getMinPoolSize();
+
+    int getInitPoolSize();
+
+    int getCheckInterval();
 }

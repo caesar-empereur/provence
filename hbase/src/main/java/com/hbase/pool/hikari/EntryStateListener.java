@@ -5,5 +5,5 @@ package com.hbase.pool.hikari;
  */
 public interface EntryStateListener {
 
-    void addConnectionEntry(int waiting);
+    void addEntry(int waiting);
 }

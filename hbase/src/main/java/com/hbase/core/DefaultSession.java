@@ -16,7 +16,7 @@ public final class DefaultSession extends DefaultTableManager implements Session
     
     private transient Connection connection;
 
-    private transient com.hbase.pool.hibernate.ConnectionProvider
+    private transient com.hbase.pool.ConnectionProvider
             ConnectionProvider;
     
     @Override

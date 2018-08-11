@@ -5,6 +5,7 @@ package com.hbase.pool.hikari;
  * @author: yangyingyang
  * @date: 2018/8/9.
  */
+@FunctionalInterface
 public interface ConnectionCloseCallback {
 
     void onClose();

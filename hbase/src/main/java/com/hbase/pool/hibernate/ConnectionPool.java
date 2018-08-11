@@ -28,7 +28,6 @@ public class ConnectionPool implements InitializingBean {
     private HbaseConfigProvider hbaseConfig;
 
     private Configuration configuration = HBaseConfiguration.create();
-    
     private final ConcurrentLinkedQueue<Connection> allConnections = new ConcurrentLinkedQueue<>();
     
     private final ConcurrentLinkedQueue<Connection> availableConnections =

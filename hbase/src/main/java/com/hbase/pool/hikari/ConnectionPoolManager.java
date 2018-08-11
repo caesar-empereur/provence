@@ -1,10 +1,10 @@
 package com.hbase.pool.hikari;
 
+import org.apache.hadoop.hbase.client.Connection;
+
 import java.lang.ref.WeakReference;
 import java.util.ArrayDeque;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -21,14 +21,17 @@ public class ConnectionPoolManager<E extends ConnectionEntry> {
     private final SynchronousQueue<E> handOffQueue;
     
     private final AtomicInteger waiters;
-
+    
     private static final long HAND_OFF_QUEUE_TIME_OUT = 10_000;
+    
+    private final ConcurrentMap<Connection, E> connectionContainer;
     
     public ConnectionPoolManager() {
         sharedList = new CopyOnWriteArrayList<>();
         threadLocalList = ThreadLocal.withInitial(() -> new ArrayDeque<>(16));
         handOffQueue = new SynchronousQueue<>(true);
         this.waiters = new AtomicInteger(0);
+        connectionContainer = new ConcurrentHashMap<>();
     }
     
     public E borrow(long timeout, final TimeUnit timeUnit, EntryStateListener entryStateListener) {
@@ -46,7 +49,7 @@ public class ConnectionPoolManager<E extends ConnectionEntry> {
         for (E entry : sharedList) {
             if (entry.compareAndSet(EntryState.NOT_IN_USE, EntryState.IN_USE)) {
                 if (waiting > 1) {
-                    entryStateListener.addConnectionEntry(waiting - 1);
+                    entryStateListener.addEntry(waiting - 1);
                 }
                 return entry;
             }
@@ -71,5 +74,21 @@ public class ConnectionPoolManager<E extends ConnectionEntry> {
             waiters.decrementAndGet();
         }
         return null;
+    }
+    
+    public int getWaitingThreadCount() {
+        return waiters.get();
+    }
+
+    public int getConnectionSize(){
+        return sharedList.size();
+    }
+    
+    public Boolean addEntry(E entry) {
+        sharedList.add(entry);
+        while (waiters.get() > 0 && !handOffQueue.offer(entry)) {
+            Thread.yield();
+        }
+        return Boolean.TRUE;
     }
 }

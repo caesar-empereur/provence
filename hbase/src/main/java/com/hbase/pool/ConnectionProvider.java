@@ -1,4 +1,4 @@
-package com.hbase.pool.hibernate;
+package com.hbase.pool;
 
 import org.apache.hadoop.hbase.client.Connection;
 
