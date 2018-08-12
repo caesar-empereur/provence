@@ -1,11 +1,11 @@
 package com.hbase.pool.hikari;
 
-import org.apache.hadoop.hbase.client.Connection;
-
 import java.lang.ref.WeakReference;
 import java.util.ArrayDeque;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.hadoop.hbase.client.Connection;
 
 /**
  * @Description
@@ -16,7 +16,7 @@ public class ConnectionPoolManager<E extends ConnectionEntry> {
     
     private final CopyOnWriteArrayList<E> sharedList;
     
-    private final ThreadLocal<ArrayDeque<E>> threadLocalList;
+    private final ThreadLocal<ArrayDeque<Object>> threadLocalList;
     
     private final SynchronousQueue<E> handOffQueue;
     
@@ -34,9 +34,12 @@ public class ConnectionPoolManager<E extends ConnectionEntry> {
         connectionContainer = new ConcurrentHashMap<>();
     }
     
-    public E borrow(long timeout, final TimeUnit timeUnit, EntryStateListener entryStateListener) {
-        final ArrayDeque<E> queue = threadLocalList.get();
-        for (E entry : queue) {
+    @SuppressWarnings("all")
+    public E borrow(long timeout,
+                    final TimeUnit timeUnit,
+                    EntryStateListener entryStateListener) throws InterruptedException {
+        final ArrayDeque<Object> queue = threadLocalList.get();
+        for (Object entry : queue) {
             final E weakReferenceEntry = ((WeakReference<E>) entry).get();
             if (weakReferenceEntry != null
                 && weakReferenceEntry.compareAndSet(EntryState.NOT_IN_USE, EntryState.IN_USE)) {
@@ -58,8 +61,7 @@ public class ConnectionPoolManager<E extends ConnectionEntry> {
             do {
                 final long start = System.currentTimeMillis();
                 E entry = handOffQueue.poll(timeout, TimeUnit.NANOSECONDS);
-                if (entry != null
-                    || entry.compareAndSet(EntryState.NOT_IN_USE, EntryState.IN_USE)) {
+                if (entry != null || entry.compareAndSet(EntryState.NOT_IN_USE, EntryState.IN_USE)) {
                     return entry;
                 }
                 timeout -= System.currentTimeMillis() - start;
@@ -67,20 +69,16 @@ public class ConnectionPoolManager<E extends ConnectionEntry> {
             while (timeout > HAND_OFF_QUEUE_TIME_OUT);
             return null;
         }
-        catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         finally {
             waiters.decrementAndGet();
         }
-        return null;
     }
     
     public int getWaitingThreadCount() {
         return waiters.get();
     }
-
-    public int getConnectionSize(){
+    
+    public int getConnectionSize() {
         return sharedList.size();
     }
     
@@ -90,5 +88,23 @@ public class ConnectionPoolManager<E extends ConnectionEntry> {
             Thread.yield();
         }
         return Boolean.TRUE;
+    }
+    
+    public boolean remove(final E entry) {
+        boolean removedEntry = sharedList.remove(entry);
+        return removedEntry;
+    }
+    
+    public void recycle(E entry) {
+        entry.setState(EntryState.NOT_IN_USE);
+        
+        if (entry.getState() != EntryState.NOT_IN_USE || handOffQueue.offer(entry)) {
+            return;
+        }
+        else {
+            Thread.yield();
+        }
+        final ArrayDeque<Object> list = threadLocalList.get();
+        list.add(new WeakReference<>(entry));
     }
 }
