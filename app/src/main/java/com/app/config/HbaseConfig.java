@@ -26,4 +26,24 @@ public class HbaseConfig implements HbaseConfigProvider {
     public String getHbaseValue() {
         return hbaseValue;
     }
+    
+    @Override
+    public int getMaxPoolSize() {
+        return 0;
+    }
+    
+    @Override
+    public int getMinPoolSize() {
+        return 0;
+    }
+    
+    @Override
+    public int getInitPoolSize() {
+        return 0;
+    }
+    
+    @Override
+    public int getCheckInterval() {
+        return 0;
+    }
 }
