@@ -16,6 +16,7 @@ import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.hibernate.cfg.AvailableSettings;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -36,6 +37,18 @@ import java.util.Map;
 @RequestMapping("/connection")
 @Slf4j
 public class ConnectionController {
+    
+    @Value("${hbase.zookeeper.quorum}")
+    private String quorum;
+    
+    @Value("${hbase.zookeeper.port}")
+    private String port;
+    
+    @Value("${table.name}")
+    private String tableName;
+    
+    @Value("${hadoop.dir}")
+    private String hadoopDir;
     
     @Resource
     private UserRepository userRepository;
@@ -78,16 +91,15 @@ public class ConnectionController {
     @ApiOperation(value = "测试获取的链接")
     @GetMapping(value = "/hbase")
     public void hbase() {
-        System.setProperty("hadoop.home.dir", "D:\\dev\\app\\hadoop-common\\hadoop-common-2.2.0-bin-master");
+        System.setProperty("hadoop.home.dir", hadoopDir);
         Configuration configuration = HBaseConfiguration.create();
-        configuration.set(HConstants.ZOOKEEPER_QUORUM, "47.106.228.154,47.106.226.102,47.106.226.211");
-//        configuration.set(HConstants.ZOOKEEPER_QUORUM, "119.23.12.220");
-
-        configuration.set(HConstants.ZOOKEEPER_CLIENT_PORT, "2181");
+        configuration.set(HConstants.ZOOKEEPER_QUORUM, quorum);
+        
+        configuration.set(HConstants.ZOOKEEPER_CLIENT_PORT, port);
         try {
             org.apache.hadoop.hbase.client.Connection connection =
                                                                  ConnectionFactory.createConnection(configuration);
-            Table monitorTable = connection.getTable(TableName.valueOf("monitor-native"));
+            Table monitorTable = connection.getTable(TableName.valueOf(tableName));
             ResultScanner results = monitorTable.getScanner(new Scan());
             for (Result result : results) {
                 log.info("rowkey: " + Bytes.toLong(result.getRow()));
