@@ -10,8 +10,7 @@ public class PoolAccessLock {
     public static final PoolAccessLock SUSPEND_RESUME_LOCK = new PoolAccessLock();
     
     /**
-     * 并发的信号量中一共有 10000 个许可, 同一时间只有10000个线程能执行
-     * acquire release 之间的代码, 但不能保证线程安全
+     * 并发的信号量中 10000 个许可
      */
     private static final int MAX_PERMITS = 10000;
 

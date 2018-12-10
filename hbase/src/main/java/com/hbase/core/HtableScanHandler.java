@@ -46,7 +46,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     public void registerBeanDefinitions(AnnotationMetadata metadata,
                                         BeanDefinitionRegistry registry) {
         if (!metadata.isAnnotated(HbaseTableScan.class.getName())) {
-            log.info("bootstrap class must config @HbaseTableScan");
+            log.info("启动类必须配置 @HbaseTableScan");
         }
         AnnotationAttributes attributes =
                                         AnnotationAttributes.fromMap(metadata.getAnnotationAttributes(HbaseTableScan.class.getName()));
@@ -72,7 +72,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
             resources = this.resourcePatternResolver.getResources(pattern);
         }
         catch (IOException e) {
-            throw new ParseException("read resource file error");
+            throw new ParseException("解析类异常");
         }
         MetadataReaderFactory readerFactory =
                                             new CachingMetadataReaderFactory(this.resourcePatternResolver);
@@ -84,7 +84,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                 clazz = ClassUtils.forName(className, this.classLoader);
             }
             catch (IOException | ClassNotFoundException e) {
-                throw new ParseException("parse resource file error");
+                throw new ParseException("解析配置类异常");
             }
             classes.add(clazz);
         });
@@ -112,12 +112,12 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                 columnListConfiged.addAll(Arrays.asList(columnFamily.columnList()));
             });
             if (columnListConfiged.size() != new HashSet<>(columnListConfiged).size()) {
-                throw new ConfigurationException("differnet column family has reduplicated field");
+                throw new ConfigurationException("不同 ColumnFamily 不能包含相同 column");
             }
             columnListConfiged.forEach(column -> {
                 if (!columnsWithField.contains(column)) {
                     throw new ConfigurationException(column
-                                                     + " config column list can not be found on class");
+                                                     + "找不到配置的列");
                 }
             });
         }
