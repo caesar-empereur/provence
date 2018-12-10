@@ -104,8 +104,9 @@ public class ConnectionController {
         try {
             org.apache.hadoop.hbase.client.Connection connection =
                                                                  ConnectionFactory.createConnection(configuration);
-            Table monitorTable = connection.getTable(TableName.valueOf(tableName));
-            ResultScanner results = monitorTable.getScanner(new Scan());
+            Table table = connection.getTable(TableName.valueOf(tableName));
+            System.out.println("获取到连接" + table.getName());
+            ResultScanner results = table.getScanner(new Scan());
             for (Result result : results) {
                 log.info("rowkey: " + Bytes.toLong(result.getRow()));
             }
