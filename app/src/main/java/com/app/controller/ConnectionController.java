@@ -1,13 +1,14 @@
 package com.app.controller;
 
-import com.app.model.mysql.User;
-import com.app.repository.mysql.UserRepository;
-import com.app.vo.mysql.UserView;
-import com.zaxxer.hikari.hibernate.HikariConnectionProvider;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
@@ -15,17 +16,19 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.hibernate.cfg.AvailableSettings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
+import com.app.model.mysql.User;
+import com.app.repository.mysql.UserRepository;
+import com.app.vo.mysql.UserView;
+import com.zaxxer.hikari.hibernate.HikariConnectionProvider;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 
 /**
  * @Description
@@ -35,9 +38,10 @@ import java.util.Map;
 @Api(description = "guest接口")
 @RestController
 @RequestMapping("/connection")
-@Slf4j
 public class ConnectionController {
-    
+
+    private Logger log = LoggerFactory.getLogger(this.getClass());
+
     @Value("${hbase.zookeeper.quorum}")
     private String quorum;
     
@@ -91,11 +95,12 @@ public class ConnectionController {
     @ApiOperation(value = "测试获取的链接")
     @GetMapping(value = "/hbase")
     public void hbase() {
-        System.setProperty("hadoop.home.dir", hadoopDir);
+//        System.setProperty("hadoop.home.dir", hadoopDir);
         Configuration configuration = HBaseConfiguration.create();
+//        configuration.set(HConstants.ZOOKEEPER_QUORUM, quorum);
+//
+//        configuration.set(HConstants.ZOOKEEPER_CLIENT_PORT, port);
         configuration.set(HConstants.ZOOKEEPER_QUORUM, quorum);
-        
-        configuration.set(HConstants.ZOOKEEPER_CLIENT_PORT, port);
         try {
             org.apache.hadoop.hbase.client.Connection connection =
                                                                  ConnectionFactory.createConnection(configuration);
