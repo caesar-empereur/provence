@@ -97,9 +97,10 @@ public class ConnectionController {
     public void hbase() {
 //        System.setProperty("hadoop.home.dir", hadoopDir);
         Configuration configuration = HBaseConfiguration.create();
+
 //        configuration.set(HConstants.ZOOKEEPER_QUORUM, quorum);
-//
 //        configuration.set(HConstants.ZOOKEEPER_CLIENT_PORT, port);
+
         configuration.set(HConstants.ZOOKEEPER_QUORUM, quorum);
         try {
             org.apache.hadoop.hbase.client.Connection connection =
