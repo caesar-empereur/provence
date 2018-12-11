@@ -5,16 +5,14 @@ package com.hbase.config;
  * @date 2018/7/11.
  */
 public interface HbaseConfigProvider {
-
-    String getHbaseName();
-
-    String getHbaseValue();
-
+    
+    String getQuorum();
+    
     int getMaxPoolSize();
-
+    
     int getMinPoolSize();
-
+    
     int getInitPoolSize();
-
+    
     int getCheckInterval();
 }

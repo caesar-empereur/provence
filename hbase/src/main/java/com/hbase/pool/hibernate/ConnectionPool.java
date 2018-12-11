@@ -8,6 +8,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -28,6 +29,7 @@ public class ConnectionPool implements InitializingBean {
     private HbaseConfigProvider hbaseConfig;
 
     private Configuration configuration = HBaseConfiguration.create();
+
     private final ConcurrentLinkedQueue<Connection> allConnections = new ConcurrentLinkedQueue<>();
     
     private final ConcurrentLinkedQueue<Connection> availableConnections =
@@ -113,7 +115,7 @@ public class ConnectionPool implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        configuration.set(hbaseConfig.getHbaseName(), hbaseConfig.getHbaseValue());
+        configuration.set(HConstants.ZOOKEEPER_QUORUM, hbaseConfig.getQuorum());
     }
 
     private void addConnections(int numberOfConnections) {

@@ -11,22 +11,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class HbaseConfig implements HbaseConfigProvider {
     
-    @Value("${hbase-name}")
-    private String hbaseName;
-    
-    @Value("${hbase-value}")
-    private String hbaseValue;
+    @Value("${hbase.zookeeper.quorum}")
+    private String quorum;
     
     @Override
-    public String getHbaseName() {
-        return hbaseName;
+    public String getQuorum() {
+        return quorum;
     }
-    
-    @Override
-    public String getHbaseValue() {
-        return hbaseValue;
-    }
-    
+
     @Override
     public int getMaxPoolSize() {
         return 0;
