@@ -2,8 +2,10 @@ package com.hbase.pool.hibernate;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import com.hbase.config.HbaseConfigProvider;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -11,29 +13,39 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.springframework.beans.factory.InitializingBean;
-
-import javax.annotation.Resource;
 
 /**
  * @author yingyang
  * @date 2018/7/11.
  */
-public class ConnectionPool implements InitializingBean {
+public class ConnectionPool {
     
     private static final Log log = LogFactory.getLog(ConnectionPool.class);
     
-    private final int minSize, maxSize;
+    private int maxSize;
     
-    @Resource
-    private HbaseConfigProvider hbaseConfig;
-
+    private int minSize;
+    
+    private int initSize;
+    
+    private String quorum;
+    
     private Configuration configuration = HBaseConfiguration.create();
-
+    
     private final ConcurrentLinkedQueue<Connection> allConnections = new ConcurrentLinkedQueue<>();
     
     private final ConcurrentLinkedQueue<Connection> availableConnections =
                                                                          new ConcurrentLinkedQueue<>();
+    
+    public ConnectionPool(int maxSize, int minSize, int initSize, int interval, String quorum) {
+        this.maxSize = maxSize;
+        this.minSize = minSize;
+        this.initSize = initSize;
+        this.quorum = quorum;
+        
+        ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+        executorService.scheduleAtFixedRate(this::validate, 0, interval, TimeUnit.SECONDS);
+    }
     
     public Connection poll() {
         Connection conn = availableConnections.poll();
@@ -44,7 +56,7 @@ public class ConnectionPool implements InitializingBean {
                     return poll();
                 }
             }
-            throw new IllegalStateException("The internal connection pool has reached its maximum size and no connection is currently available!");
+            throw new IllegalStateException("The connection pool has reached its maximum size and no connection is currently available!");
         }
         return conn;
     }
@@ -68,36 +80,31 @@ public class ConnectionPool implements InitializingBean {
             }
         }
     }
-
-    public void validate() {
+    
+    private void validate() {
+        log.info("当前连接数 " + size());
         final int size = size();
-        if (size >= minSize ) {
-            log.debug( "Connection pool now considered primed; min-size will be maintained" );
+        if (size >= minSize) {
+            log.debug("Connection pool now considered primed; min-size will be maintained");
         }
-        if ( size < minSize) {
+        if (size < minSize) {
             int numberToBeAdded = minSize - size;
-            addConnections( numberToBeAdded );
+            addConnections(numberToBeAdded);
         }
-        else if ( size > maxSize ) {
+        else if (size > maxSize) {
             int numberToBeRemoved = size - maxSize;
-            removeConnections( numberToBeRemoved );
+            removeConnections(numberToBeRemoved);
         }
     }
-
+    
     public int size() {
         return availableConnections.size();
     }
-
+    
     public void add(Connection conn) {
         availableConnections.offer(conn);
     }
-
-    private ConnectionPool(Builder builder) {
-        maxSize = builder.maxSize;
-        minSize = builder.minSize;
-        addConnections(builder.initialSize);
-    }
-
+    
     private void removeConnections(int numberToBeRemoved) {
         for (int i = 0; i < numberToBeRemoved; i++) {
             Connection connection = availableConnections.poll();
@@ -112,21 +119,21 @@ public class ConnectionPool implements InitializingBean {
             allConnections.remove(connection);
         }
     }
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        configuration.set(HConstants.ZOOKEEPER_QUORUM, hbaseConfig.getQuorum());
-    }
-
+    
     private void addConnections(int numberOfConnections) {
         for (int i = 0; i < numberOfConnections; i++) {
-            Connection connection = buildConnection();
+            Connection connection = createConnection();
             allConnections.add(connection);
             availableConnections.add(connection);
         }
     }
-
-    private Connection buildConnection() {
+    
+    private Connection createConnection() {
+        if (configuration == null) {
+//            System.setProperty("hadoop.home.dir", "D:\\dev\\app\\hadoop-common\\hadoop-common-2.2.0-bin-master");
+            configuration = HBaseConfiguration.create();
+            configuration.set(HConstants.ZOOKEEPER_QUORUM, quorum);
+        }
         try {
             return ConnectionFactory.createConnection(configuration);
         }
@@ -136,31 +143,4 @@ public class ConnectionPool implements InitializingBean {
         return null;
     }
     
-    static class Builder {
-        
-        private int initialSize = 1;
-        
-        private int minSize = 1;
-        
-        private int maxSize = 20;
-
-        public Builder initialSize(int initialSize) {
-            this.initialSize = initialSize;
-            return this;
-        }
-
-        public Builder minSize(int minSize) {
-            this.minSize = minSize;
-            return this;
-        }
-
-        public Builder maxSize(int maxSize) {
-            this.maxSize = maxSize;
-            return this;
-        }
-
-        public ConnectionPool build() {
-            return new ConnectionPool(this);
-        }
-    }
 }

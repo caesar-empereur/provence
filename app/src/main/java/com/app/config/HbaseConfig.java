@@ -13,29 +13,41 @@ public class HbaseConfig implements HbaseConfigProvider {
     
     @Value("${hbase.zookeeper.quorum}")
     private String quorum;
-    
+
+    @Value("${init-size}")
+    private Integer initSize;
+
+    @Value("${min-size}")
+    private Integer minSize;
+
+    @Value("${max-size}")
+    private Integer maxSize;
+
+    @Value("${validate-interval}")
+    private Integer interval;
+
     @Override
     public String getQuorum() {
         return quorum;
     }
 
     @Override
-    public int getMaxPoolSize() {
-        return 0;
+    public Integer getInitSize() {
+        return initSize;
     }
-    
+
     @Override
-    public int getMinPoolSize() {
-        return 0;
+    public Integer getMinSize() {
+        return minSize;
     }
-    
+
     @Override
-    public int getInitPoolSize() {
-        return 0;
+    public Integer getMaxSize() {
+        return maxSize;
     }
-    
+
     @Override
-    public int getCheckInterval() {
-        return 0;
+    public Integer getInterval() {
+        return interval;
     }
 }

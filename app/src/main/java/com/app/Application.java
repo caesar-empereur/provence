@@ -13,7 +13,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
  * @author yingyang
  * @date 2018/7/5.
  */
-@ComponentScan("com.app")
+@ComponentScan({"com.app","com.hbase"})
 @EntityScan("com.app.model")
 @SpringBootApplication
 @EnableSwagger2

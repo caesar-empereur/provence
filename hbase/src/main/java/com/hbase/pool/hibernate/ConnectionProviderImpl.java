@@ -4,54 +4,51 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.hbase.config.ConnectionSizeConfig;
-import com.hbase.pool.ConnectionProvider;
+import javax.annotation.Resource;
+
 import org.apache.hadoop.hbase.Stoppable;
 import org.apache.hadoop.hbase.client.Connection;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import com.hbase.config.HbaseConfigProvider;
+import com.hbase.pool.ConnectionProvider;
 
 /**
  * @author yingyang
  * @date 2018/7/11.
  */
+@Component
 public class ConnectionProviderImpl implements ConnectionProvider, Stoppable, InitializingBean {
     
     private boolean active = false;
     
     private ScheduledExecutorService executorService;
     
-    private ConnectionPool pooledConnections;
-    
+    private ConnectionPool connectionPool;
+
     @Resource
-    private ConnectionSizeConfig connectionSizeConfig;
+    private HbaseConfigProvider hbaseConfig;
     
     @Override
     public void afterPropertiesSet() throws Exception {
-        pooledConnections = buildPool();
-        final long validationInterval = connectionSizeConfig.getInterval().longValue();
-        executorService = Executors.newSingleThreadScheduledExecutor();
-        executorService.scheduleWithFixedDelay(() -> pooledConnections.validate(),
-                                               validationInterval,
-                                               validationInterval,
-                                               TimeUnit.SECONDS);
+        connectionPool = createPool();
     }
     
     @Override
     public Connection getConnection() {
         if (!active) {
-            throw new IllegalStateException("Connection pooledConnections is no longer active");
+            throw new IllegalStateException("Connection pool is no longer active");
         }
-        return pooledConnections.poll();
+        return connectionPool.poll();
     }
     
-    private ConnectionPool buildPool() {
-        ConnectionPool.Builder builder = new ConnectionPool.Builder();
-        builder.initialSize(connectionSizeConfig.getInitSize());
-        builder.minSize(connectionSizeConfig.getMinSize());
-        builder.maxSize(connectionSizeConfig.getMaxSize());
-        return builder.build();
+    private ConnectionPool createPool() {
+        return new ConnectionPool(hbaseConfig.getMaxSize(),
+                                  hbaseConfig.getMinSize(),
+                                  hbaseConfig.getInitSize(),
+                                  hbaseConfig.getInterval(),
+                                  hbaseConfig.getQuorum());
     }
     
     @Override
@@ -59,7 +56,7 @@ public class ConnectionProviderImpl implements ConnectionProvider, Stoppable, In
         if (conn == null) {
             return;
         }
-        pooledConnections.add(conn);
+        connectionPool.add(conn);
     }
     
     @Override
@@ -72,7 +69,7 @@ public class ConnectionProviderImpl implements ConnectionProvider, Stoppable, In
             executorService.shutdown();
         }
         executorService = null;
-        pooledConnections.close();
+        connectionPool.close();
     }
     
     @Override
