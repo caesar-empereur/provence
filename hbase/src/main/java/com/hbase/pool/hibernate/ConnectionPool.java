@@ -2,9 +2,6 @@ package com.hbase.pool.hibernate;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -34,21 +31,15 @@ public class ConnectionPool {
     
     private final ConcurrentLinkedQueue<Connection> allConnections = new ConcurrentLinkedQueue<>();
     
-    private final ConcurrentLinkedQueue<Connection> availableConnections =
-                                                                         new ConcurrentLinkedQueue<>();
-    
-    public ConnectionPool(int maxSize, int minSize, int initSize, int interval, String quorum) {
+    public ConnectionPool(int maxSize, int minSize, int initSize, String quorum) {
         this.maxSize = maxSize;
         this.minSize = minSize;
         this.initSize = initSize;
         this.quorum = quorum;
-        
-        ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-        executorService.scheduleAtFixedRate(this::validate, 0, interval, TimeUnit.SECONDS);
     }
     
     public Connection poll() {
-        Connection conn = availableConnections.poll();
+        Connection conn = allConnections.poll();
         if (conn == null) {
             synchronized (allConnections) {
                 if (allConnections.size() < maxSize) {
@@ -61,32 +52,9 @@ public class ConnectionPool {
         return conn;
     }
     
-    public void close() {
-        try {
-            int allocationCount = allConnections.size() - availableConnections.size();
-            if (allocationCount > 0) {
-                log.error("Connection leak detected: there are " + allocationCount
-                          + " unclosed connections upon shutting down pool ");
-            }
-        }
-        finally {
-            for (Connection connection : allConnections) {
-                try {
-                    connection.close();
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-    
-    private void validate() {
+    public void validate() {
         log.info("当前连接数 " + size());
         final int size = size();
-        if (size >= minSize) {
-            log.debug("Connection pool now considered primed; min-size will be maintained");
-        }
         if (size < minSize) {
             int numberToBeAdded = minSize - size;
             addConnections(numberToBeAdded);
@@ -98,16 +66,12 @@ public class ConnectionPool {
     }
     
     public int size() {
-        return availableConnections.size();
-    }
-    
-    public void add(Connection conn) {
-        availableConnections.offer(conn);
+        return allConnections.size();
     }
     
     private void removeConnections(int numberToBeRemoved) {
         for (int i = 0; i < numberToBeRemoved; i++) {
-            Connection connection = availableConnections.poll();
+            Connection connection = allConnections.poll();
             if (connection != null) {
                 try {
                     connection.close();
@@ -123,14 +87,12 @@ public class ConnectionPool {
     private void addConnections(int numberOfConnections) {
         for (int i = 0; i < numberOfConnections; i++) {
             Connection connection = createConnection();
-            allConnections.add(connection);
-            availableConnections.add(connection);
+            allConnections.offer(connection);
         }
     }
     
     private Connection createConnection() {
         if (configuration == null) {
-//            System.setProperty("hadoop.home.dir", "D:\\dev\\app\\hadoop-common\\hadoop-common-2.2.0-bin-master");
             configuration = HBaseConfiguration.create();
             configuration.set(HConstants.ZOOKEEPER_QUORUM, quorum);
         }

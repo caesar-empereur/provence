@@ -1,12 +1,12 @@
 package com.hbase.pool.hibernate;
 
+import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Resource;
 
-import org.apache.hadoop.hbase.Stoppable;
 import org.apache.hadoop.hbase.client.Connection;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Component;
@@ -19,20 +19,30 @@ import com.hbase.pool.ConnectionProvider;
  * @date 2018/7/11.
  */
 @Component
-public class ConnectionProviderImpl implements ConnectionProvider, Stoppable, InitializingBean {
+public class ConnectionProviderImpl implements ConnectionProvider, InitializingBean {
     
     private boolean active = false;
     
     private ScheduledExecutorService executorService;
     
     private ConnectionPool connectionPool;
-
+    
     @Resource
     private HbaseConfigProvider hbaseConfig;
     
     @Override
     public void afterPropertiesSet() throws Exception {
-        connectionPool = createPool();
+        connectionPool = new ConnectionPool(hbaseConfig.getMaxSize(),
+                                            hbaseConfig.getMinSize(),
+                                            hbaseConfig.getInitSize(),
+                                            hbaseConfig.getQuorum());
+
+        final long validationInterval = hbaseConfig.getInterval().longValue();
+        executorService = Executors.newSingleThreadScheduledExecutor();
+        executorService.scheduleWithFixedDelay(() -> connectionPool.validate(),
+                                               0,
+                                               validationInterval,
+                                               TimeUnit.SECONDS);
     }
     
     @Override
@@ -43,37 +53,17 @@ public class ConnectionProviderImpl implements ConnectionProvider, Stoppable, In
         return connectionPool.poll();
     }
     
-    private ConnectionPool createPool() {
-        return new ConnectionPool(hbaseConfig.getMaxSize(),
-                                  hbaseConfig.getMinSize(),
-                                  hbaseConfig.getInitSize(),
-                                  hbaseConfig.getInterval(),
-                                  hbaseConfig.getQuorum());
-    }
-    
     @Override
     public void closeConnection(Connection conn) {
         if (conn == null) {
             return;
         }
-        connectionPool.add(conn);
+        try {
+            conn.close();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     
-    @Override
-    public void stop(String why) {
-        if (!active) {
-            return;
-        }
-        active = false;
-        if (executorService != null) {
-            executorService.shutdown();
-        }
-        executorService = null;
-        connectionPool.close();
-    }
-    
-    @Override
-    public boolean isStopped() {
-        return !active;
-    }
 }
