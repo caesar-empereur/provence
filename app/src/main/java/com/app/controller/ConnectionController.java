@@ -54,17 +54,6 @@ public class ConnectionController {
     @Value("${hadoop.dir}")
     private String hadoopDir;
     
-    @Resource
-    private UserRepository userRepository;
-    
-    @ApiOperation(value = "jpa测试")
-    @PostMapping(value = "/jpa")
-    public void jpa(@RequestBody UserView userView) {
-        User user = new User();
-        BeanUtils.copyProperties(userView, user);
-        userRepository.save(user);
-    }
-    
     @ApiOperation(value = "测试获取的链接")
     @GetMapping(value = "/hikari")
     public void connection() {
@@ -75,7 +64,7 @@ public class ConnectionController {
         map.put(AvailableSettings.USER, "root");
         map.put(AvailableSettings.PASS, "123456");
         map.put(AvailableSettings.DRIVER, "com.mysql.jdbc.Driver");
-        
+
         HikariConnectionProvider provider = new HikariConnectionProvider();
         provider.configure(map);
         try {
