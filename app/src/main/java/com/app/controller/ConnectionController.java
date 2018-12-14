@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -79,6 +80,13 @@ public class ConnectionController {
         catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    @ApiOperation(value = "测试获取的链接")
+    @GetMapping(value = "/session")
+    public String string(HttpServletRequest request) {
+        request.getSession();
+        return "heheda";
     }
     
     @ApiOperation(value = "测试获取的链接")

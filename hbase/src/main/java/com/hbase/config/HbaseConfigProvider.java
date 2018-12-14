@@ -8,11 +8,4 @@ public interface HbaseConfigProvider {
 
     String getQuorum();
     
-    Integer getInitSize();
-    
-    Integer getMinSize();
-    
-    Integer getMaxSize();
-    
-    Integer getInterval();
 }

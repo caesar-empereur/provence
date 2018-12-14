@@ -1,7 +1,7 @@
 package com.hbase.pool.hibernate;
 
 import java.io.IOException;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.*;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -26,6 +26,8 @@ public class ConnectionPool {
     private int initSize;
     
     private String quorum;
+
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
     
     private Configuration configuration = HBaseConfiguration.create();
     
@@ -38,23 +40,20 @@ public class ConnectionPool {
         this.quorum = quorum;
     }
     
-    public Connection poll() {
+    public Connection poll(ObtainConnectionCallback callback) {
         Connection conn = allConnections.poll();
-        if (conn == null) {
+        if (conn == null || conn.isClosed()) {
             synchronized (allConnections) {
-                if (allConnections.size() < maxSize) {
-                    addConnections(1);
-                    return poll();
-                }
+                return createConnection();
             }
-            throw new IllegalStateException("The connection pool has reached its maximum size and no connection is currently available!");
         }
+        executorService.submit(callback::onCreateConnection);
         return conn;
     }
     
     public void validate() {
-        log.info("当前连接数 " + size());
-        final int size = size();
+        log.info("当前连接数 " + allConnections.size());
+        final int size = allConnections.size();
         if (size < minSize) {
             int numberToBeAdded = minSize - size;
             addConnections(numberToBeAdded);
@@ -63,10 +62,6 @@ public class ConnectionPool {
             int numberToBeRemoved = size - maxSize;
             removeConnections(numberToBeRemoved);
         }
-    }
-    
-    public int size() {
-        return allConnections.size();
     }
     
     private void removeConnections(int numberToBeRemoved) {
@@ -84,7 +79,7 @@ public class ConnectionPool {
         }
     }
     
-    private void addConnections(int numberOfConnections) {
+    public void addConnections(int numberOfConnections) {
         for (int i = 0; i < numberOfConnections; i++) {
             Connection connection = createConnection();
             allConnections.offer(connection);
@@ -100,9 +95,15 @@ public class ConnectionPool {
             return ConnectionFactory.createConnection(configuration);
         }
         catch (IOException e) {
-            e.printStackTrace();
+            log.error(e);
+            throw new RuntimeException("创建连接失败，检查配置");
         }
-        return null;
     }
-    
+
+    public void recycle(Connection connection){
+        if (connection.isClosed()){
+            return;
+        }
+        allConnections.offer(connection);
+    }
 }
