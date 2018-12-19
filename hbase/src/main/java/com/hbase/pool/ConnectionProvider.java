@@ -12,5 +12,5 @@ public interface ConnectionProvider {
 
     Connection getConnection();
 
-    void releaseConnection(Connection connection);
+    void recycleConnection(Connection connection);
 }

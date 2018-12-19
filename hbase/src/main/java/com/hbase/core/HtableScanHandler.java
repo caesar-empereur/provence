@@ -3,6 +3,7 @@ package com.hbase.core;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -37,11 +38,12 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     
     private static final String CLASS_RESOURCE_PATTERN = "/**/*.class";
     
-    private ResourcePatternResolver resourcePatternResolver =
-                                                            new PathMatchingResourcePatternResolver();
+    private ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
     
     private ClassLoader classLoader;
-    
+
+    public static final ConcurrentHashMap<Class, Htable> TABLE_CONTAINNER = new ConcurrentHashMap<>();
+
     @Override
     public void registerBeanDefinitions(AnnotationMetadata metadata,
                                         BeanDefinitionRegistry registry) {
@@ -58,6 +60,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                                                       && clazz.isAnnotationPresent(RowKey.class))
                                      .map(this::resolveAnnotationClass)
                                      .collect(Collectors.toSet());
+        TableInitDelegate.initHbaseTable(htables);
         log.info(htables.toArray());
     }
     
@@ -74,8 +77,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
         catch (IOException e) {
             throw new ParseException("解析类异常");
         }
-        MetadataReaderFactory readerFactory =
-                                            new CachingMetadataReaderFactory(this.resourcePatternResolver);
+        MetadataReaderFactory readerFactory = new CachingMetadataReaderFactory(this.resourcePatternResolver);
         Stream.of(resources).filter(Resource::isReadable).forEach(resource -> {
             Class clazz;
             try {
@@ -116,12 +118,13 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
             }
             columnListConfiged.forEach(column -> {
                 if (!columnsWithField.contains(column)) {
-                    throw new ConfigurationException(column
-                                                     + "找不到配置的列");
+                    throw new ConfigurationException(column + "找不到配置的列");
                 }
             });
         }
-        return new Htable(tableName, rowkeyColumns, columnFamilyMap, columnsWithField);
+        Htable htable = new Htable(tableName, rowkeyColumns, columnFamilyMap, columnsWithField);
+        TABLE_CONTAINNER.put(clazz, htable);
+        return htable;
     }
     
     @Override

@@ -1,8 +1,11 @@
 package com.hbase.pool.hibernate;
 
 import java.io.IOException;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import com.hbase.config.ConnectionConfig;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -20,12 +23,8 @@ public class ConnectionPool {
     private static final Log log = LogFactory.getLog(ConnectionPool.class);
     
     private int maxSize;
-    
+
     private int minSize;
-    
-    private int initSize;
-    
-    private String quorum;
 
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
     
@@ -33,11 +32,14 @@ public class ConnectionPool {
     
     private final ConcurrentLinkedQueue<Connection> allConnections = new ConcurrentLinkedQueue<>();
     
-    public ConnectionPool(int maxSize, int minSize, int initSize, String quorum) {
-        this.maxSize = maxSize;
-        this.minSize = minSize;
-        this.initSize = initSize;
-        this.quorum = quorum;
+    public ConnectionPool(ConnectionConfig connectionConfig) {
+        this.maxSize = connectionConfig.getMaxSize();
+        this.minSize = connectionConfig.getMinSize();
+
+        if (configuration == null) {
+            configuration = HBaseConfiguration.create();
+            configuration.set(HConstants.ZOOKEEPER_QUORUM, connectionConfig.getQuorum());
+        }
     }
     
     public Connection poll(ObtainConnectionCallback callback) {
@@ -87,10 +89,7 @@ public class ConnectionPool {
     }
     
     private Connection createConnection() {
-        if (configuration == null) {
-            configuration = HBaseConfiguration.create();
-            configuration.set(HConstants.ZOOKEEPER_QUORUM, quorum);
-        }
+
         try {
             return ConnectionFactory.createConnection(configuration);
         }

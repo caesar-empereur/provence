@@ -17,13 +17,6 @@ public class ConnectionConfig {
 
     private Integer validateInterval;
 
-    public ConnectionConfig(Integer initSize,
-                            Integer minSize,
-                            Integer maxSize,
-                            Integer validateInterval) {
-        this.initSize = initSize;
-        this.minSize = minSize;
-        this.maxSize = maxSize;
-        this.validateInterval = validateInterval;
-    }
+    private String quorum;
+
 }
