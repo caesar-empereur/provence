@@ -1,96 +1,34 @@
 package com.hbase.core;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.context.ResourceLoaderAware;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
-import org.springframework.core.annotation.AnnotationAttributes;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.core.io.support.ResourcePatternResolver;
-import org.springframework.core.type.AnnotationMetadata;
-import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
-import org.springframework.core.type.classreading.MetadataReader;
-import org.springframework.core.type.classreading.MetadataReaderFactory;
-import org.springframework.util.ClassUtils;
-
-import com.hbase.annotation.*;
+import com.hbase.annotation.CompoundColumFamily;
+import com.hbase.annotation.HTableColum;
+import com.hbase.annotation.HbaseTable;
+import com.hbase.annotation.RowKey;
 import com.hbase.exception.ConfigurationException;
-import com.hbase.exception.ParseException;
+import com.hbase.util.ClassParser;
 
 /**
  * Created by leon on 2017/4/11.
  */
-@Configuration
-public class HtableScanHandler implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
+public class HtableScanHandler {
     
-    private Log log = LogFactory.getLog(this.getClass());
+    public static final ConcurrentHashMap<Class, Htable> TABLE_CONTAINNER =
+                                                                          new ConcurrentHashMap<>();
     
-    private static final String CLASS_RESOURCE_PATTERN = "/**/*.class";
-    
-    private ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
-    
-    private ClassLoader classLoader;
-
-    public static final ConcurrentHashMap<Class, Htable> TABLE_CONTAINNER = new ConcurrentHashMap<>();
-
-    @Override
-    public void registerBeanDefinitions(AnnotationMetadata metadata,
-                                        BeanDefinitionRegistry registry) {
-        if (!metadata.isAnnotated(HbaseTableScan.class.getName())) {
-            log.info("启动类必须配置 @HbaseTableScan");
-        }
-        AnnotationAttributes attributes =
-                                        AnnotationAttributes.fromMap(metadata.getAnnotationAttributes(HbaseTableScan.class.getName()));
-        String packageName = attributes.getString("value");
-        
-        Set<Class> classes = scanPackage(packageName);
+    public HtableScanHandler(String packName) {
+        Set<Class> classes = ClassParser.scanPackage(packName);
         Set<Htable> htables = classes.stream()
                                      .filter(clazz -> clazz.isAnnotationPresent(HbaseTable.class)
                                                       && clazz.isAnnotationPresent(RowKey.class))
                                      .map(this::resolveAnnotationClass)
                                      .collect(Collectors.toSet());
         TableInitDelegate.initHbaseTable(htables);
-        log.info(htables.toArray());
-    }
-    
-    private Set<Class> scanPackage(String packageName) {
-        Set<Class> classes = new LinkedHashSet<>();
-        
-        String pattern = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX
-                         + ClassUtils.convertClassNameToResourcePath(packageName)
-                         + CLASS_RESOURCE_PATTERN;
-        Resource[] resources;
-        try {
-            resources = this.resourcePatternResolver.getResources(pattern);
-        }
-        catch (IOException e) {
-            throw new ParseException("解析类异常");
-        }
-        MetadataReaderFactory readerFactory = new CachingMetadataReaderFactory(this.resourcePatternResolver);
-        Stream.of(resources).filter(Resource::isReadable).forEach(resource -> {
-            Class clazz;
-            try {
-                MetadataReader reader = readerFactory.getMetadataReader(resource);
-                String className = reader.getClassMetadata().getClassName();
-                clazz = ClassUtils.forName(className, this.classLoader);
-            }
-            catch (IOException | ClassNotFoundException e) {
-                throw new ParseException("解析配置类异常");
-            }
-            classes.add(clazz);
-        });
-        return classes;
     }
     
     private Htable resolveAnnotationClass(Class clazz) {
@@ -127,8 +65,4 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
         return htable;
     }
     
-    @Override
-    public void setResourceLoader(ResourceLoader resourceLoader) {
-        this.classLoader = resourceLoader.getClassLoader();
-    }
 }

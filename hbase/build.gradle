@@ -11,7 +11,5 @@ jar {
 }
 
 dependencies {
-    providedCompile "org.springframework.boot:spring-boot-starter-data-jpa:$version_spring_boot"
-    providedCompile "org.springframework.boot:spring-boot-starter-web:$version_spring_boot"
     compile "org.apache.hbase:hbase-client:2.1.0"
 }
