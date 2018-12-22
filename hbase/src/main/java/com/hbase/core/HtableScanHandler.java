@@ -11,12 +11,17 @@ import com.hbase.annotation.HTableColum;
 import com.hbase.annotation.HbaseTable;
 import com.hbase.annotation.RowKey;
 import com.hbase.exception.ConfigurationException;
+import com.hbase.pool.hibernate.ConnectionPool;
 import com.hbase.util.ClassParser;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Created by leon on 2017/4/11.
  */
 public class HtableScanHandler {
+    
+    private final Log log = LogFactory.getLog(this.getClass());
     
     public static final ConcurrentHashMap<Class, Htable> TABLE_CONTAINNER =
                                                                           new ConcurrentHashMap<>();
@@ -28,6 +33,7 @@ public class HtableScanHandler {
                                                       && clazz.isAnnotationPresent(RowKey.class))
                                      .map(this::resolveAnnotationClass)
                                      .collect(Collectors.toSet());
+        log.info("解析到表结构: " + htables.toArray());
         TableInitDelegate.initHbaseTable(htables);
     }
     

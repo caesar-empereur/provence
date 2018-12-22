@@ -11,5 +11,8 @@ jar {
 }
 
 dependencies {
-    compile "org.apache.hbase:hbase-client:2.1.0"
+    compile "org.apache.hbase:hbase-client:2.1.1"
+
+    compile "commons-io:commons-io:2.5"
+    compile "org.apache.commons:commons-lang3:3.4"
 }

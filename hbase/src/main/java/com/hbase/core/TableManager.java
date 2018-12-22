@@ -1,16 +1,16 @@
 package com.hbase.core;
 
-import com.hbase.pool.ConnectionProvider;
-import com.hbase.pool.hibernate.ConnectionPoolManager;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.*;
-import org.springframework.util.CollectionUtils;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.*;
+
+import com.hbase.pool.ConnectionProvider;
+import com.hbase.pool.hibernate.ConnectionPoolManager;
 
 /**
  * @Description
@@ -18,7 +18,9 @@ import java.util.Set;
  * @date: 2018/12/17.
  */
 public class TableManager {
-    
+
+    private final Log log = LogFactory.getLog(this.getClass());
+
     private ConnectionProvider connectionProvider = new ConnectionPoolManager();
     
     public Boolean initTable(Htable htable, InitFinishedCallback callback) {
@@ -31,18 +33,21 @@ public class TableManager {
                 callback.finish();
                 return true;
             }
-            HTableDescriptor tableDescriptor = new HTableDescriptor(tableName);
-            if (!CollectionUtils.isEmpty(htable.getColumnsWithFamily())) {
-                Map<String, Set<String>> columnWithFamily = htable.getColumnsWithFamily();
+            TableDescriptor tableDescriptor = TableDescriptorBuilder.newBuilder(tableName).build();
+            
+            Map<String, Set<String>> columnWithFamily = htable.getColumnsWithFamily();
+            if (columnWithFamily != null && columnWithFamily.size() >= 0
+                && tableDescriptor instanceof TableDescriptorBuilder.ModifyableTableDescriptor) {
                 for (Map.Entry<String, Set<String>> entry : columnWithFamily.entrySet()) {
-                    HColumnDescriptor hColumnDescriptor = new HColumnDescriptor(entry.getKey());
-                    tableDescriptor.addFamily(hColumnDescriptor);
+                    ColumnFamilyDescriptor columnFamilyDescriptor = ColumnFamilyDescriptorBuilder.of(entry.getKey());
+                    ((TableDescriptorBuilder.ModifyableTableDescriptor) tableDescriptor).setColumnFamily(columnFamilyDescriptor);
                 }
             }
             admin.createTable(tableDescriptor);
         }
         catch (IOException e) {
-            e.printStackTrace();
+            log.error(e);
+            return false;
         }
         finally {
             try {
@@ -52,7 +57,7 @@ public class TableManager {
                 connectionProvider.recycleConnection(connection);
             }
             catch (IOException e) {
-                e.printStackTrace();
+                log.error(e);
             }
         }
         callback.finish();

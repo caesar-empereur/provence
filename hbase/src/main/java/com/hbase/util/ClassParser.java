@@ -1,5 +1,7 @@
 package com.hbase.util;
 
+import com.hbase.exception.ParseException;
+
 import java.io.File;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -36,10 +38,9 @@ public class ClassParser {
                     resolveClass(packageName, filePath, clazzs);
                 }
             }
-            
         }
         catch (Exception e) {
-            e.printStackTrace();
+            throw new ParseException("");
         }
         return clazzs;
     }
@@ -71,7 +72,7 @@ public class ClassParser {
                                      .loadClass(packageName + PACK_SEPARATOR + className));
                 }
                 catch (Exception e) {
-                    e.printStackTrace();
+                    throw new ParseException("");
                 }
             }
         }

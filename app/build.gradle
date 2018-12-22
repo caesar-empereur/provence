@@ -20,8 +20,5 @@ dependencies{
     compile "io.springfox:springfox-swagger2:2.5.0"
     compile "io.springfox:springfox-swagger-ui:2.5.0"
 
-    compile "commons-io:commons-io:2.5"
-    compile "org.apache.commons:commons-lang3:3.4"
-
     compile("mysql:mysql-connector-java:5.1.39")
 }

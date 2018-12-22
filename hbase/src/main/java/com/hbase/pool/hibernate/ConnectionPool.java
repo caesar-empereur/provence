@@ -20,12 +20,12 @@ import org.apache.hadoop.hbase.client.ConnectionFactory;
  */
 public class ConnectionPool {
     
-    private static final Log log = LogFactory.getLog(ConnectionPool.class);
+    private final Log log = LogFactory.getLog(this.getClass());
     
     private int maxSize;
-
+    
     private int minSize;
-
+    
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
     
     private Configuration configuration = HBaseConfiguration.create();
@@ -33,9 +33,10 @@ public class ConnectionPool {
     private final ConcurrentLinkedQueue<Connection> allConnections = new ConcurrentLinkedQueue<>();
     
     public ConnectionPool(ConnectionConfig connectionConfig) {
+        log.info("开始实例化连接池");
         this.maxSize = connectionConfig.getMaxSize();
         this.minSize = connectionConfig.getMinSize();
-
+        
         if (configuration == null) {
             configuration = HBaseConfiguration.create();
             configuration.set(HConstants.ZOOKEEPER_QUORUM, connectionConfig.getQuorum());
@@ -79,6 +80,7 @@ public class ConnectionPool {
             }
             allConnections.remove(connection);
         }
+        log.info("移除连接数: " + numberToBeRemoved);
     }
     
     public void addConnections(int numberOfConnections) {
@@ -86,10 +88,11 @@ public class ConnectionPool {
             Connection connection = createConnection();
             allConnections.offer(connection);
         }
+        log.info("增加连接数：" + numberOfConnections);
     }
     
     private Connection createConnection() {
-
+        log.info("创建连接");
         try {
             return ConnectionFactory.createConnection(configuration);
         }
@@ -98,9 +101,9 @@ public class ConnectionPool {
             throw new RuntimeException("创建连接失败，检查配置");
         }
     }
-
-    public void recycle(Connection connection){
-        if (connection.isClosed()){
+    
+    public void recycle(Connection connection) {
+        if (connection.isClosed()) {
             return;
         }
         allConnections.offer(connection);

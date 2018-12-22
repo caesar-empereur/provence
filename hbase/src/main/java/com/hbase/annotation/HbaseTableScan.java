@@ -2,6 +2,7 @@ package com.hbase.annotation;
 
 import java.lang.annotation.*;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 import com.hbase.core.HtableScanHandler;
