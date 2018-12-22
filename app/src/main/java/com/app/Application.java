@@ -16,18 +16,21 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
  * @author yingyang
  * @date 2018/7/5.
  */
-@ComponentScan({"com.app","com.hbase"})
+@ComponentScan({ "com.app", "com.hbase" })
 @EntityScan("com.app.model")
 @SpringBootApplication
 @EnableSwagger2
 @ServletComponentScan
 public class Application implements WebMvcConfigurer {
-
+    
     @Bean
-    public HtableScanHandler htableScanHandler(){
-        return new HtableScanHandler("com.app.model");
+    public HtableScanHandler htableScanHandler() {
+        return HtableScanHandler.builder()
+                                .withModelPackageName("com.app.model")
+                                .withRepositoryPackageName("com.app.repository")
+                                .build();
     }
-
+    
     public static void main(String[] args) {
         SpringApplication.run(Application.class);
     }

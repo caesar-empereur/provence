@@ -21,7 +21,7 @@ public class TableManager {
 
     private final Log log = LogFactory.getLog(this.getClass());
 
-    private ConnectionProvider connectionProvider = new ConnectionPoolManager();
+    private ConnectionProvider connectionProvider = ConnectionPoolManager.getInstance();
     
     public Boolean initTable(Htable htable, InitFinishedCallback callback) {
         Admin admin = null;

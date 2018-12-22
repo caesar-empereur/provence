@@ -20,6 +20,8 @@ import com.hbase.pool.ConnectionProvider;
  */
 public class ConnectionPoolManager implements ConnectionProvider {
 
+    private static ConnectionPoolManager instance;
+
     private static final Log log = LogFactory.getLog(ConnectionPoolManager.class);
 
     private ConnectionPool connectionPool;
@@ -44,9 +46,9 @@ public class ConnectionPoolManager implements ConnectionProvider {
             throw new RuntimeException("配置文件出错");
         }
     }
-    
-    public ConnectionPoolManager() {
-        connectionPool = new ConnectionPool(connectionConfig);
+
+    private ConnectionPoolManager() {
+        connectionPool = ConnectionPool.getInstance(connectionConfig);
         final long validationInterval = connectionConfig.getValidateInterval().longValue();
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
         executorService.scheduleAtFixedRate(connectionPool::validate, 0, validationInterval, TimeUnit.SECONDS);
@@ -62,5 +64,16 @@ public class ConnectionPoolManager implements ConnectionProvider {
     public void recycleConnection(Connection connection) {
         connectionPool.recycle(connection);
         log.info("回收连接");
+    }
+
+    public static ConnectionPoolManager getInstance() {
+        if (instance == null) {
+            synchronized (ConnectionPoolManager.class) {
+                if (instance == null) {
+                    instance = new ConnectionPoolManager();
+                }
+            }
+        }
+        return instance;
     }
 }

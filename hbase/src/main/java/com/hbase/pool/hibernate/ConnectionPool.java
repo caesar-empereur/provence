@@ -20,6 +20,8 @@ import org.apache.hadoop.hbase.client.ConnectionFactory;
  */
 public class ConnectionPool {
     
+    private static ConnectionPool instance;
+    
     private final Log log = LogFactory.getLog(this.getClass());
     
     private int maxSize;
@@ -32,7 +34,7 @@ public class ConnectionPool {
     
     private final ConcurrentLinkedQueue<Connection> allConnections = new ConcurrentLinkedQueue<>();
     
-    public ConnectionPool(ConnectionConfig connectionConfig) {
+    private ConnectionPool(ConnectionConfig connectionConfig) {
         log.info("开始实例化连接池");
         this.maxSize = connectionConfig.getMaxSize();
         this.minSize = connectionConfig.getMinSize();
@@ -107,5 +109,16 @@ public class ConnectionPool {
             return;
         }
         allConnections.offer(connection);
+    }
+    
+    public static ConnectionPool getInstance(ConnectionConfig connectionConfig) {
+        if (instance == null) {
+            synchronized (ConnectionPool.class) {
+                if (instance == null) {
+                    instance = new ConnectionPool(connectionConfig);
+                }
+            }
+        }
+        return instance;
     }
 }

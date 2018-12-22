@@ -2,13 +2,18 @@ package com.hbase.repository;
 
 import java.util.Collection;
 
+import com.hbase.pool.ConnectionProvider;
+import com.hbase.pool.hibernate.ConnectionPoolManager;
+
 /**
  * @Description
  * @author: yangyingyang
  * @date: 2018/12/17.
  */
 public class DefaultHbaseCrudRepository implements HbaseCrudRepository {
-    
+
+    private ConnectionProvider connectionProvider = ConnectionPoolManager.getInstance();
+
     @Override
     public Object save(Object model) {
         return null;
@@ -48,4 +53,5 @@ public class DefaultHbaseCrudRepository implements HbaseCrudRepository {
     public Object findByRowkey(Object rowkey) {
         return null;
     }
+    
 }
