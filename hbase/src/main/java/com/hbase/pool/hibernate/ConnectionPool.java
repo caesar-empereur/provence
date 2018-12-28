@@ -30,16 +30,18 @@ public class ConnectionPool {
     
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
     
-    private Configuration configuration = HBaseConfiguration.create();
+    private Configuration configuration;
     
     private final ConcurrentLinkedQueue<Connection> allConnections = new ConcurrentLinkedQueue<>();
     
     private ConnectionPool(ConnectionConfig connectionConfig) {
+
         log.info("开始实例化连接池");
         this.maxSize = connectionConfig.getMaxSize();
         this.minSize = connectionConfig.getMinSize();
         
         if (configuration == null) {
+            System.setProperty("hadoop.home.dir", connectionConfig.getHadoopDir());
             configuration = HBaseConfiguration.create();
             configuration.set(HConstants.ZOOKEEPER_QUORUM, connectionConfig.getQuorum());
         }
