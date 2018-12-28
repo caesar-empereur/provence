@@ -1,2 +1,2 @@
 cd /app/project/hbase-model
-git pull origin master
+git pull origin hibernate
