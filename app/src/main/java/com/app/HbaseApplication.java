@@ -21,7 +21,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @SpringBootApplication
 @EnableSwagger2
 @ServletComponentScan
-public class Application implements WebMvcConfigurer {
+public class HbaseApplication implements WebMvcConfigurer {
     
     @Bean
     public HtableScanHandler htableScanHandler() {
@@ -32,6 +32,6 @@ public class Application implements WebMvcConfigurer {
     }
     
     public static void main(String[] args) {
-        SpringApplication.run(Application.class);
+        SpringApplication.run(HbaseApplication.class);
     }
 }
