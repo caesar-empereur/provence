@@ -38,6 +38,7 @@ public final class TableInitDelegate {
         catch (InterruptedException e) {
             e.printStackTrace();
         }
+        tableManager.closeAdmin();
         log.info("表结构初始化完成");
         for (Map.Entry<Htable, Boolean> entry : results.entrySet()){
             if (!entry.getValue()){

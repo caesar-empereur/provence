@@ -128,4 +128,8 @@ public class ConnectionPool {
         }
         return instance;
     }
+
+    private Object readResolve() {
+        return instance;
+    }
 }

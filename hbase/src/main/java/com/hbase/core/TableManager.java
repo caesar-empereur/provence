@@ -20,54 +20,60 @@ import com.hbase.pool.hibernate.ConnectionPoolManager;
  * @date: 2018/12/17.
  */
 public class TableManager {
-
+    
     private final Log log = LogFactory.getLog(this.getClass());
-
+    
     private ConnectionProvider connectionProvider = ConnectionPoolManager.getInstance();
-
+    
     private List<TableName> tableNames;
-
+    
+    private Admin admin = null;
+    
     public Boolean initTable(Htable htable, InitFinishedCallback callback) {
-        Admin admin = null;
+        boolean succeed;
         Connection connection = connectionProvider.getConnection();
         TableName tableName = TableName.valueOf(htable.getTableName());
         try {
-            admin = connection.getAdmin();
-            if (tableNames == null || tableNames.size()==0){
+            if (admin == null) {
+                admin = connection.getAdmin();
+            }
+            if (tableNames == null || tableNames.size() == 0) {
                 tableNames = Arrays.asList(admin.listTableNames());
             }
-            if (tableNames.contains(tableName)){
-                callback.finish();
-                return true;
+            if (tableNames.contains(tableName)) {
+                succeed = true;
             }
             TableDescriptor tableDescriptor = TableDescriptorBuilder.newBuilder(tableName).build();
-
+            
             Map<String, Set<String>> columnWithFamily = htable.getColumnsWithFamily();
             if (columnWithFamily != null && columnWithFamily.size() >= 0
                 && tableDescriptor instanceof TableDescriptorBuilder.ModifyableTableDescriptor) {
                 for (Map.Entry<String, Set<String>> entry : columnWithFamily.entrySet()) {
-                    ColumnFamilyDescriptor columnFamilyDescriptor = ColumnFamilyDescriptorBuilder.of(entry.getKey());
+                    ColumnFamilyDescriptor columnFamilyDescriptor =
+                                                                  ColumnFamilyDescriptorBuilder.of(entry.getKey());
                     ((TableDescriptorBuilder.ModifyableTableDescriptor) tableDescriptor).setColumnFamily(columnFamilyDescriptor);
                 }
             }
             admin.createTable(tableDescriptor);
+            succeed = true;
         }
         catch (IOException e) {
             log.error(e);
-            return false;
+            succeed = false;
         }
-        finally {
+        connectionProvider.recycleConnection(connection);
+        callback.finish();
+        return succeed;
+    }
+    
+    public void closeAdmin() {
+        if (admin != null) {
             try {
-                if (admin != null) {
-                    admin.close();
-                }
-                connectionProvider.recycleConnection(connection);
+                admin.close();
             }
             catch (IOException e) {
-                log.error(e);
+                e.printStackTrace();
             }
         }
-        callback.finish();
-        return true;
     }
 }

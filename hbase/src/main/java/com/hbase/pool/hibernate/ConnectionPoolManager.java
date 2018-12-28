@@ -88,4 +88,8 @@ public class ConnectionPoolManager implements ConnectionProvider {
         }
         return instance;
     }
+
+    private Object readResolve() {
+        return instance;
+    }
 }
