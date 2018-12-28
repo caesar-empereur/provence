@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.alibaba.fastjson.JSON;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -34,7 +35,8 @@ public class HtableScanHandler {
                                                       && clazz.isAnnotationPresent(RowKey.class))
                                      .map(this::resolveModelClass)
                                      .collect(Collectors.toSet());
-        log.info("解析到表结构: " + htables.toArray());
+        
+        log.info("解析到表结构: " + JSON.toJSONString(htables));
         TableInitDelegate.initHbaseTable(htables);
     }
     
@@ -71,11 +73,11 @@ public class HtableScanHandler {
         TABLE_CONTAINNER.put(clazz, htable);
         return htable;
     }
-
+    
     public static Builder builder() {
         return new Builder();
     }
-
+    
     public static class Builder {
         
         private String modelPackageName;

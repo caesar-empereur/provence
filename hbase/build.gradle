@@ -15,4 +15,5 @@ dependencies {
 
     compile "commons-io:commons-io:2.5"
     compile "org.apache.commons:commons-lang3:3.4"
+    compile "com.alibaba:fastjson:1.2.49"
 }

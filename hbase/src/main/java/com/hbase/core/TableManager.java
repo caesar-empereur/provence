@@ -1,6 +1,8 @@
 package com.hbase.core;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -22,19 +24,24 @@ public class TableManager {
     private final Log log = LogFactory.getLog(this.getClass());
 
     private ConnectionProvider connectionProvider = ConnectionPoolManager.getInstance();
-    
+
+    private List<TableName> tableNames;
+
     public Boolean initTable(Htable htable, InitFinishedCallback callback) {
         Admin admin = null;
         Connection connection = connectionProvider.getConnection();
         TableName tableName = TableName.valueOf(htable.getTableName());
         try {
             admin = connection.getAdmin();
-            if (admin.isTableAvailable(tableName)) {
+            if (tableNames == null || tableNames.size()==0){
+                tableNames = Arrays.asList(admin.listTableNames());
+            }
+            if (tableNames.contains(tableName)){
                 callback.finish();
                 return true;
             }
             TableDescriptor tableDescriptor = TableDescriptorBuilder.newBuilder(tableName).build();
-            
+
             Map<String, Set<String>> columnWithFamily = htable.getColumnsWithFamily();
             if (columnWithFamily != null && columnWithFamily.size() >= 0
                 && tableDescriptor instanceof TableDescriptorBuilder.ModifyableTableDescriptor) {

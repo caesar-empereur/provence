@@ -59,8 +59,14 @@ public class ConnectionPool {
     }
     
     public void validate() {
-        log.info("当前连接数 " + allConnections.size());
         final int size = allConnections.size();
+        for (Connection connection : allConnections){
+            if (connection.isClosed() || connection.isAborted()){
+                allConnections.remove(connection);
+                log.info("移除失效连接: " + connection);
+            }
+        }
+        log.info("当前连接数 " + size);
         if (size < minSize) {
             int numberToBeAdded = minSize - size;
             addConnections(numberToBeAdded);
@@ -96,7 +102,6 @@ public class ConnectionPool {
     }
     
     private Connection createConnection() {
-        log.info("创建连接");
         try {
             return ConnectionFactory.createConnection(configuration);
         }

@@ -7,6 +7,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.client.Connection;
@@ -22,6 +23,8 @@ public class ConnectionPoolManager implements ConnectionProvider {
 
     private static ConnectionPoolManager instance;
 
+    private static final String WINDOWS_SYSTEM = "Windows";
+
     private static final Log log = LogFactory.getLog(ConnectionPoolManager.class);
 
     private ConnectionPool connectionPool;
@@ -29,7 +32,6 @@ public class ConnectionPoolManager implements ConnectionProvider {
     private static ConnectionConfig connectionConfig;
     
     static {
-        log.info("开始读取配置文件");
         InputStream inputStream = ConnectionPoolManager.class.getClassLoader().getResourceAsStream("config.properties");
         Properties properties = new Properties();
         try {
@@ -40,10 +42,21 @@ public class ConnectionPoolManager implements ConnectionProvider {
             connectionConfig.setMaxSize(Integer.valueOf(properties.getProperty("maxSize")));
             connectionConfig.setValidateInterval(Integer.valueOf(properties.getProperty("validateInterval")));
             connectionConfig.setQuorum(properties.getProperty("quorum"));
-            log.info("配置文件读取结束");
+            checkHadoopDir(properties);
         }
         catch (IOException e) {
             throw new RuntimeException("配置文件出错");
+        }
+    }
+
+    /**
+     * 处理 windows 系统在调试本项目时 hadoop 环境的问题
+     */
+    private static void checkHadoopDir(Properties properties) {
+        Properties props = System.getProperties();
+        String osName = props.getProperty("os.name");
+        if (StringUtils.containsIgnoreCase(osName, WINDOWS_SYSTEM)) {
+            connectionConfig.setHadoopDir(properties.getProperty("hadoopDir"));
         }
     }
 
@@ -56,7 +69,6 @@ public class ConnectionPoolManager implements ConnectionProvider {
     
     @Override
     public Connection getConnection() {
-        log.info("获取连接");
         return connectionPool.poll(() -> connectionPool.addConnections(1));
     }
     

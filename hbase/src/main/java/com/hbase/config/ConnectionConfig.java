@@ -19,4 +19,5 @@ public class ConnectionConfig {
 
     private String quorum;
 
+    private String hadoopDir;
 }
