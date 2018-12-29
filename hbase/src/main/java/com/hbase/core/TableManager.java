@@ -42,20 +42,26 @@ public class TableManager {
             }
             if (tableNames.contains(tableName)) {
                 succeed = true;
-            }
-            TableDescriptor tableDescriptor = TableDescriptorBuilder.newBuilder(tableName).build();
-            
-            Map<String, Set<String>> columnWithFamily = htable.getColumnsWithFamily();
-            if (columnWithFamily != null && columnWithFamily.size() >= 0
-                && tableDescriptor instanceof TableDescriptorBuilder.ModifyableTableDescriptor) {
-                for (Map.Entry<String, Set<String>> entry : columnWithFamily.entrySet()) {
+            } else {
+                TableDescriptor tableDescriptor = TableDescriptorBuilder.newBuilder(tableName).build();
+                Map<String, Set<String>> columnWithFamily = htable.getColumnsWithFamily();
+                if (columnWithFamily != null && columnWithFamily.size() >= 0
+                    && tableDescriptor instanceof TableDescriptorBuilder.ModifyableTableDescriptor) {
+                    for (Map.Entry<String, Set<String>> entry : columnWithFamily.entrySet()) {
+                        ColumnFamilyDescriptor columnFamilyDescriptor =
+                                                                      ColumnFamilyDescriptorBuilder.of(entry.getKey());
+                        ((TableDescriptorBuilder.ModifyableTableDescriptor) tableDescriptor).setColumnFamily(columnFamilyDescriptor);
+                    }
+                }
+                Set<String> columnWithoutFamily = htable.getColumnWithoutFamily();
+                for (String column : columnWithoutFamily) {
                     ColumnFamilyDescriptor columnFamilyDescriptor =
-                                                                  ColumnFamilyDescriptorBuilder.of(entry.getKey());
+                                                                  ColumnFamilyDescriptorBuilder.of(column);
                     ((TableDescriptorBuilder.ModifyableTableDescriptor) tableDescriptor).setColumnFamily(columnFamilyDescriptor);
                 }
+                admin.createTable(tableDescriptor);
+                succeed = true;
             }
-            admin.createTable(tableDescriptor);
-            succeed = true;
         }
         catch (IOException e) {
             log.error(e);
