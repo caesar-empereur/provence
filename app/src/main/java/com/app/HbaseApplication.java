@@ -1,5 +1,7 @@
 package com.app;
 
+import com.hbase.repository.DefaultHbaseCrudRepository;
+import com.hbase.repository.HbaseCrudRepository;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -26,9 +28,14 @@ public class HbaseApplication implements WebMvcConfigurer {
     @Bean
     public HtableScanHandler htableScanHandler() {
         return HtableScanHandler.builder()
-                                .withModelPackageName("com.app.model")
-                                .withRepositoryPackageName("com.app.repository")
+                                .withModelPackageName("com.app.model.hbase")
+                                .withRepositoryPackageName("com.app.repository.hbase")
                                 .build();
+    }
+
+    @Bean
+    public HbaseCrudRepository hbaseCrudRepository(){
+        return DefaultHbaseCrudRepository.Builder.build();
     }
     
     public static void main(String[] args) {

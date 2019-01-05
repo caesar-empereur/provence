@@ -31,9 +31,10 @@ public class TableManager {
     
     public Boolean initTable(Htable htable, InitFinishedCallback callback) {
         boolean succeed;
-        Connection connection = connectionProvider.getConnection();
-        TableName tableName = TableName.valueOf(htable.getTableName());
+        Connection connection = null;
         try {
+            connection = connectionProvider.getConnection();
+            TableName tableName = TableName.valueOf(htable.getTableName());
             if (admin == null) {
                 admin = connection.getAdmin();
             }
@@ -43,6 +44,7 @@ public class TableManager {
             if (tableNames.contains(tableName)) {
                 succeed = true;
             } else {
+                //只需要处理 column family, column 在 Put 的时候指定
                 TableDescriptor tableDescriptor = TableDescriptorBuilder.newBuilder(tableName).build();
                 Map<String, Set<String>> columnWithFamily = htable.getColumnsWithFamily();
                 if (columnWithFamily != null && columnWithFamily.size() >= 0
@@ -52,12 +54,6 @@ public class TableManager {
                                                                       ColumnFamilyDescriptorBuilder.of(entry.getKey());
                         ((TableDescriptorBuilder.ModifyableTableDescriptor) tableDescriptor).setColumnFamily(columnFamilyDescriptor);
                     }
-                }
-                Set<String> columnWithoutFamily = htable.getColumnWithoutFamily();
-                for (String column : columnWithoutFamily) {
-                    ColumnFamilyDescriptor columnFamilyDescriptor =
-                                                                  ColumnFamilyDescriptorBuilder.of(column);
-                    ((TableDescriptorBuilder.ModifyableTableDescriptor) tableDescriptor).setColumnFamily(columnFamilyDescriptor);
                 }
                 admin.createTable(tableDescriptor);
                 succeed = true;

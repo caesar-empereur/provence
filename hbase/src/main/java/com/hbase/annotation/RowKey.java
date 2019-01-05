@@ -15,5 +15,10 @@ import java.lang.annotation.Target;
 @Documented
 public @interface RowKey {
 
+    /**
+     * 暂时只支持 String, Number 类型
+     * @return
+     */
+
     String[] columnList();
 }
