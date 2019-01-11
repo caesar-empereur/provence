@@ -1,7 +1,9 @@
 package com.app;
 
+import com.app.repository.hbase.AccountRepository;
 import com.hbase.repository.DefaultHbaseCrudRepository;
 import com.hbase.repository.HbaseCrudRepository;
+import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -24,7 +26,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @EnableSwagger2
 @ServletComponentScan
 public class HbaseApplication implements WebMvcConfigurer {
-    
+
     @Bean
     public HtableScanHandler htableScanHandler() {
         return HtableScanHandler.builder()
@@ -34,8 +36,13 @@ public class HbaseApplication implements WebMvcConfigurer {
     }
 
     @Bean
-    public HbaseCrudRepository hbaseCrudRepository(){
-        return DefaultHbaseCrudRepository.Builder.build();
+    public AccountRepository hbaseCrudRepository(){
+        ProxyFactory proxyFactory = new ProxyFactory();
+        DefaultHbaseCrudRepository defaultHbaseCrudRepository = new DefaultHbaseCrudRepository();
+        proxyFactory.setTarget(defaultHbaseCrudRepository);
+        proxyFactory.setInterfaces(AccountRepository.class);
+        Object object = proxyFactory.getProxy(this.getClass().getClassLoader());
+        return (AccountRepository) object;
     }
     
     public static void main(String[] args) {

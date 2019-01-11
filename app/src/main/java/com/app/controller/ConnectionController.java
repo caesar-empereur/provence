@@ -10,6 +10,7 @@ import java.util.Map;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
+import com.app.repository.hbase.AccountRepository;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
@@ -54,6 +55,9 @@ public class ConnectionController {
     
     @Value("${hadoop.dir}")
     private String hadoopDir;
+
+    @Resource
+    private AccountRepository accountRepository;
     
     @ApiOperation(value = "测试获取的链接")
     @GetMapping(value = "/hikari")
@@ -82,13 +86,12 @@ public class ConnectionController {
         }
     }
 
-    @ApiOperation(value = "测试获取的链接")
-    @GetMapping(value = "/session")
-    public String string(HttpServletRequest request) {
-        request.getSession();
-        return "heheda";
-    }
-    
+//    @ApiOperation(value = "count")
+//    @GetMapping(value = "/hbase")
+//    public void count(){
+//        accountRepository.count();
+//    }
+
     @ApiOperation(value = "测试获取的链接")
     @GetMapping(value = "/hbase")
     public void hbase() {

@@ -12,11 +12,11 @@ public interface HbaseCrudRepository<RK, M> {
 
     Collection<M> saveAll(Collection<M> models);
     
-    void deleteByRowkey(RK rowkey);
+    void delete(M model);
     
     void deleteAll();
     
-    void deleteAll(Collection<RK> rowkeys);
+    void deleteAll(Collection<M> models);
     
     long count();
 

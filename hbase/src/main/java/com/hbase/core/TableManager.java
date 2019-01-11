@@ -46,15 +46,15 @@ public class TableManager {
             } else {
                 //只需要处理 column family, column 在 Put 的时候指定
                 TableDescriptor tableDescriptor = TableDescriptorBuilder.newBuilder(tableName).build();
-                Map<String, Set<String>> columnWithFamily = htable.getColumnsWithFamily();
-                if (columnWithFamily != null && columnWithFamily.size() >= 0
-                    && tableDescriptor instanceof TableDescriptorBuilder.ModifyableTableDescriptor) {
-                    for (Map.Entry<String, Set<String>> entry : columnWithFamily.entrySet()) {
-                        ColumnFamilyDescriptor columnFamilyDescriptor =
-                                                                      ColumnFamilyDescriptorBuilder.of(entry.getKey());
-                        ((TableDescriptorBuilder.ModifyableTableDescriptor) tableDescriptor).setColumnFamily(columnFamilyDescriptor);
-                    }
-                }
+//                Map<String, Set<String>> columnWithFamily = htable.getColumnsWithFamily();
+//                if (columnWithFamily != null && columnWithFamily.size() >= 0
+//                    && tableDescriptor instanceof TableDescriptorBuilder.ModifyableTableDescriptor) {
+//                    for (Map.Entry<String, Set<String>> entry : columnWithFamily.entrySet()) {
+//                        ColumnFamilyDescriptor columnFamilyDescriptor =
+//                                                                      ColumnFamilyDescriptorBuilder.of(entry.getKey());
+//                        ((TableDescriptorBuilder.ModifyableTableDescriptor) tableDescriptor).setColumnFamily(columnFamilyDescriptor);
+//                    }
+//                }
                 admin.createTable(tableDescriptor);
                 succeed = true;
             }

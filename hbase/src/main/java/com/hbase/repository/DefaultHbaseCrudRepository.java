@@ -1,14 +1,16 @@
 package com.hbase.repository;
 
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import com.hbase.exception.OperationException;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.*;
 
 import com.alibaba.fastjson.JSON;
 import com.hbase.core.Htable;
@@ -16,6 +18,10 @@ import com.hbase.core.HtableScanHandler;
 import com.hbase.exception.ConnectionException;
 import com.hbase.pool.ConnectionProvider;
 import com.hbase.pool.hibernate.ConnectionPoolManager;
+import org.apache.hadoop.hbase.filter.FirstKeyOnlyFilter;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.springframework.aop.framework.ProxyFactory;
+import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 /**
  * @Description
@@ -29,8 +35,6 @@ public class DefaultHbaseCrudRepository implements HbaseCrudRepository {
     @Override
     public Object save(Object model) {
         Htable htable = HtableScanHandler.TABLE_CONTAINNER.get(model.getClass());
-        Map<String, Object> entityMap = JSON.parseObject(JSON.toJSONString(model), Map.class);
-        
         Connection connection = connectionProvider.getConnection();
         Table table;
         try {
@@ -41,20 +45,8 @@ public class DefaultHbaseCrudRepository implements HbaseCrudRepository {
                                           + "\n"
                                           + e.getMessage());
         }
-        String rowkey = null;
-        // 生成 rowkey
-        for (Map.Entry<String, Class> entry : htable.getRowKeyColumns().entrySet()) {
-            rowkey = rowkey + entityMap.get(entry.getKey());
-        }
-        Put put = new Put(rowkey.getBytes());
-        // 获取到各个字段的值
-        for (Map.Entry<String, Object> entry : entityMap.entrySet()) {
-            put.addColumn(entry.getKey().getBytes(),
-                          null,
-                          JSON.toJSONString(entry.getValue()).getBytes());
-        }
         try {
-            table.put(put);
+            table.put(convertModelToPut(model));
         }
         catch (IOException e) {
             throw new OperationException(e.getMessage());
@@ -62,14 +54,60 @@ public class DefaultHbaseCrudRepository implements HbaseCrudRepository {
         connectionProvider.recycleConnection(connection);
         return model;
     }
+
+    private List<Put> convertModelListToPut(Collection<Object> models){
+        List<Put> putList = new ArrayList<>();
+        models.forEach(model -> putList.add(convertModelToPut(model)));
+        return putList;
+    }
+
+    private Put convertModelToPut(Object model){
+        Htable htable = HtableScanHandler.TABLE_CONTAINNER.get(model.getClass());
+        Map<String, Object> entityMap = JSON.parseObject(JSON.toJSONString(model), Map.class);
+        //字段为空的需要 去除掉
+        for (Map.Entry<String, Object> entry : entityMap.entrySet()){
+            if (entry.getValue() == null){
+                entityMap.remove(entry.getKey());
+            }
+        }
+        int rowkey = 0;
+        // 生成 rowkey
+        for (Map.Entry<String, Class> entry : htable.getRowKeyColumns().entrySet()) {
+            rowkey = rowkey + entityMap.get(entry.getKey()).hashCode();
+        }
+        Put put = new Put(Bytes.toBytes(rowkey));
+        // 获取到各个字段的值
+        for (Map.Entry<String, Object> entry : entityMap.entrySet()) {
+            put.addColumn(entry.getKey().getBytes(), null, JSON.toJSONString(entry.getValue()).getBytes());
+        }
+        return put;
+    }
     
     @Override
     public Collection saveAll(Collection models) {
+        Htable htable = HtableScanHandler.TABLE_CONTAINNER.get(new ArrayList<>(models).get(0).getClass());
+        Connection connection = connectionProvider.getConnection();
+        Table table;
+        try {
+            table = connection.getTable(TableName.valueOf(htable.getTableName()));
+        }
+        catch (IOException e) {
+            throw new ConnectionException("获取不到表: " + htable.getTableName()
+                                          + "\n"
+                                          + e.getMessage());
+        }
+        try {
+            table.put(convertModelListToPut(models));
+        }
+        catch (IOException e) {
+            throw new OperationException(e.getMessage());
+        }
+        connectionProvider.recycleConnection(connection);
         return null;
     }
     
     @Override
-    public void deleteByRowkey(Object rowkey) {
+    public void delete(Object model) {
         
     }
     
@@ -79,13 +117,47 @@ public class DefaultHbaseCrudRepository implements HbaseCrudRepository {
     }
     
     @Override
-    public void deleteAll(Collection rowkeys) {
+    public void deleteAll(Collection models) {
         
     }
     
     @Override
     public long count() {
-        return 0;
+        String tableName = null;
+        for (Type repositoryType : this.getClass().getGenericInterfaces()) {
+            if (repositoryType instanceof ParameterizedType
+                && HbaseCrudRepository.class == ((ParameterizedTypeImpl) repositoryType).getRawType()) {
+                for (Type modelType : ((ParameterizedTypeImpl) repositoryType).getActualTypeArguments()) {
+                    Class modelClass = (Class) modelType;
+                    Htable htable = HtableScanHandler.TABLE_CONTAINNER.get(modelClass);
+                    if (htable != null) {
+                        tableName = htable.getTableName();
+                    }
+                }
+            }
+        }
+        Connection connection = connectionProvider.getConnection();
+        Table table;
+        try {
+            table = connection.getTable(TableName.valueOf(tableName));
+        }
+        catch (IOException e) {
+            throw new ConnectionException("获取不到表: " + tableName + "\n" + e.getMessage());
+        }
+        Scan scan = new Scan();
+        scan.setFilter(new FirstKeyOnlyFilter());
+        long rowCount = 0;
+        try {
+            ResultScanner resultScanner = table.getScanner(scan);
+            for (Result result : resultScanner) {
+                rowCount += result.size();
+            }
+        }
+        catch (IOException e) {
+            throw new OperationException(e.getMessage());
+        }
+        connectionProvider.recycleConnection(connection);
+        return rowCount;
     }
     
     @Override
@@ -98,8 +170,8 @@ public class DefaultHbaseCrudRepository implements HbaseCrudRepository {
         return null;
     }
     
-    private DefaultHbaseCrudRepository() {
-    }
+//    private DefaultHbaseCrudRepository() {
+//    }
     
     public static class Builder {
         public static DefaultHbaseCrudRepository build() {

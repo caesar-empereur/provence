@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
 public @interface RowKey {
 
     /**
-     * 暂时只支持 String, Number 类型
+     * 暂时只支持 String, Number, Date 类型
      * @return
      */
 
