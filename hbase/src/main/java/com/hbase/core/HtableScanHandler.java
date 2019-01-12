@@ -71,6 +71,8 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                                                          && clazz.isAnnotationPresent(RowKey.class))
                                         .map(this::resolveModelClass)
                                         .collect(Collectors.toSet());
+        htables.forEach(htable -> TABLE_CONTAINNER.put(htable.getModelClass(), htable));
+        
         Set<HbaseRepositoryInfo> repositorySet =
                                                repositoryClasses.stream()
                                                                 .filter(clazz -> clazz.isAnnotationPresent(HbaseRepository.class))
@@ -140,7 +142,6 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
             }
         }
         Htable htable = new Htable(clazz, tableName, rowkeyColumnMap);
-        TABLE_CONTAINNER.put(clazz, htable);
         return htable;
     }
     
@@ -160,12 +161,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                 }
             }
         }
-        try {
-            hbaseRepositoryInfo.setHbaseCrudRepository(DefaultHbaseCrudRepository.class.newInstance());
-        }
-        catch (InstantiationException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
+        hbaseRepositoryInfo.setRepositoryClass(clazz);
         return hbaseRepositoryInfo;
     }
     

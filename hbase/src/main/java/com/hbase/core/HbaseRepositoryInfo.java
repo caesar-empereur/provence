@@ -1,7 +1,5 @@
 package com.hbase.core;
 
-import com.hbase.repository.HbaseCrudRepository;
-
 /**
  * @Description
  * @author: yangyingyang
@@ -9,18 +7,18 @@ import com.hbase.repository.HbaseCrudRepository;
  */
 public class HbaseRepositoryInfo {
 
-    private HbaseCrudRepository hbaseCrudRepository;
+    private Class repositoryClass;
 
     private Class rowkey;
 
     private Class modelClass;
 
-    public HbaseCrudRepository getHbaseCrudRepository() {
-        return hbaseCrudRepository;
+    public Class getRepositoryClass() {
+        return repositoryClass;
     }
 
-    public void setHbaseCrudRepository(HbaseCrudRepository hbaseCrudRepository) {
-        this.hbaseCrudRepository = hbaseCrudRepository;
+    public void setRepositoryClass(Class repositoryClass) {
+        this.repositoryClass = repositoryClass;
     }
 
     public Class getRowkey() {
