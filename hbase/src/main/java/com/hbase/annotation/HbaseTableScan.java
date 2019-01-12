@@ -16,5 +16,8 @@ import com.hbase.core.HtableScanHandler;
 @Import(HtableScanHandler.class)
 public @interface HbaseTableScan {
 
-    String value() default "";
+    String modelPackage() default "";
+
+    String repositoryPackage() default "";
+
 }
