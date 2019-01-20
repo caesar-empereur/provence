@@ -4,7 +4,7 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 
 /**
  * Created by leon on 2018/4/19.
@@ -12,18 +12,18 @@ import java.util.Set;
 @Data
 public class Htable implements Serializable{
     
-    private Class modelClass;
+    private Optional<Class> modelClass = Optional.empty();
     
-    private String tableName;
+    private Optional<String> tableName = Optional.empty();
     
-    private Map<String, Class> rowKeyColumns;
+    private Optional<Map<String, Class>> rowKeyColumns = Optional.empty();
     
     public Htable(Class modelClass,
                   String tableName,
                   Map<String, Class> rowKeyColumns) {
-        this.modelClass = modelClass;
-        this.tableName = tableName;
-        this.rowKeyColumns = rowKeyColumns;
+        this.modelClass = Optional.ofNullable(modelClass);
+        this.tableName = Optional.ofNullable(tableName);
+        this.rowKeyColumns = Optional.ofNullable(rowKeyColumns);
     }
 
 }

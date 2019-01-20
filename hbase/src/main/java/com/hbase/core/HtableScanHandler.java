@@ -6,11 +6,15 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.sun.jersey.server.impl.cdi.AbstractBean;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.support.AbstractBeanDefinition;
+import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.ResourceLoaderAware;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
@@ -23,6 +27,7 @@ import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
+import org.springframework.data.repository.config.RepositoryBeanNameGenerator;
 import org.springframework.util.ClassUtils;
 
 import com.alibaba.fastjson.JSON;
@@ -40,7 +45,7 @@ import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 /**
  * Created by leon on 2017/4/11.
  */
-public class HtableScanHandler implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
+public class HtableScanHandler<M, R, RK> implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
     
     private final Log log = LogFactory.getLog(this.getClass());
     
@@ -48,11 +53,12 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     
     private ResourcePatternResolver resourcePatternResolver =
                                                             new PathMatchingResourcePatternResolver();
+
+    private RepositoryBeanNameGenerator beanNameGenerator = new RepositoryBeanNameGenerator(this.getClass().getClassLoader());
     
     private ClassLoader classLoader;
     
-    public static final ConcurrentHashMap<Class, Htable> TABLE_CONTAINNER =
-                                                                          new ConcurrentHashMap<>();
+    public static final ConcurrentMap<Class, Htable> TABLE_CONTAINNER = new ConcurrentHashMap<>();
     
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
@@ -71,14 +77,24 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                                                          && clazz.isAnnotationPresent(RowKey.class))
                                         .map(this::resolveModelClass)
                                         .collect(Collectors.toSet());
-        htables.forEach(htable -> TABLE_CONTAINNER.put(htable.getModelClass(), htable));
+        htables.forEach(htable -> TABLE_CONTAINNER.put(htable.getModelClass().get(), htable));
         
         Set<HbaseRepositoryInfo> repositorySet =
                                                repositoryClasses.stream()
                                                                 .filter(clazz -> clazz.isAnnotationPresent(HbaseRepository.class))
                                                                 .map(this::resolveRepositoryClass)
                                                                 .collect(Collectors.toSet());
+        registerRepository(repositorySet, registry);
         log.info("解析到表结构: " + JSON.toJSONString(htables));
+    }
+
+    private void registerRepository(Set<HbaseRepositoryInfo> hbaseRepositoryInfos, BeanDefinitionRegistry registry){
+        for (HbaseRepositoryInfo info : hbaseRepositoryInfos){
+            BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.rootBeanDefinition(DefaultHbaseCrudRepository.class);
+            AbstractBeanDefinition beanDefinition = beanDefinitionBuilder.getBeanDefinition();
+            String beanName = beanNameGenerator.generateBeanName(beanDefinition);
+            registry.registerBeanDefinition(beanName, beanDefinition);
+        }
     }
     
     private Set<Class> scanPackage(String packageName) {
@@ -121,7 +137,8 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
         String tableName = hbaseTable.name();
         RowKey rowKey = (RowKey) clazz.getAnnotation(RowKey.class);
         Set<String> configuredRowkeyColumnSet = new HashSet<>(Arrays.asList(rowKey.columnList()));
-        
+
+        Class rowkeyClass = null;
         Map<String, Class> rowkeyColumnMap = new HashMap<>();
         /* 校验配置的 rowkey 是否是真实存在的字段 */
         for (String rowkeyColumn : configuredRowkeyColumnSet) {
@@ -134,6 +151,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                     if (fieldClass == String.class || fieldClass == Date.class
                         || fieldClass == Number.class) {
                         rowkeyColumnMap.put(rowkeyColumn, field.getClass());
+                        rowkeyClass = fieldClass;
                     }
                     else {
                         throw new ConfigurationException("rowkey 字段不支持该类型: " + fieldClass);
@@ -141,8 +159,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                 }
             }
         }
-        Htable htable = new Htable(clazz, tableName, rowkeyColumnMap);
-        return htable;
+        return new Htable(clazz, tableName, rowkeyColumnMap);
     }
     
     private HbaseRepositoryInfo resolveRepositoryClass(Class clazz) {

@@ -5,13 +5,13 @@ package com.hbase.core;
  * @author: yangyingyang
  * @date: 2019/1/5.
  */
-public class HbaseRepositoryInfo {
+public class HbaseRepositoryInfo<M, R, RK> {
 
-    private Class repositoryClass;
+    private Class<R> repositoryClass;
 
-    private Class rowkey;
+    private Class<RK> rowkey;
 
-    private Class modelClass;
+    private Class<M> modelClass;
 
     public Class getRepositoryClass() {
         return repositoryClass;

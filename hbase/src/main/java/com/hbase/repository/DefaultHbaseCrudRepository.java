@@ -38,7 +38,7 @@ public class DefaultHbaseCrudRepository implements HbaseCrudRepository {
         Connection connection = connectionProvider.getConnection();
         Table table;
         try {
-            table = connection.getTable(TableName.valueOf(htable.getTableName()));
+            table = connection.getTable(TableName.valueOf(htable.getTableName().get()));
         }
         catch (IOException e) {
             throw new ConnectionException("获取不到表: " + htable.getTableName()
@@ -72,7 +72,7 @@ public class DefaultHbaseCrudRepository implements HbaseCrudRepository {
         }
         int rowkey = 0;
         // 生成 rowkey
-        for (Map.Entry<String, Class> entry : htable.getRowKeyColumns().entrySet()) {
+        for (Map.Entry<String, Class> entry : htable.getRowKeyColumns().get().entrySet()) {
             rowkey = rowkey + entityMap.get(entry.getKey()).hashCode();
         }
         Put put = new Put(Bytes.toBytes(rowkey));
@@ -89,7 +89,7 @@ public class DefaultHbaseCrudRepository implements HbaseCrudRepository {
         Connection connection = connectionProvider.getConnection();
         Table table;
         try {
-            table = connection.getTable(TableName.valueOf(htable.getTableName()));
+            table = connection.getTable(TableName.valueOf(htable.getTableName().get()));
         }
         catch (IOException e) {
             throw new ConnectionException("获取不到表: " + htable.getTableName()
@@ -131,7 +131,7 @@ public class DefaultHbaseCrudRepository implements HbaseCrudRepository {
                     Class modelClass = (Class) modelType;
                     Htable htable = HtableScanHandler.TABLE_CONTAINNER.get(modelClass);
                     if (htable != null) {
-                        tableName = htable.getTableName();
+                        tableName = htable.getTableName().get();
                     }
                 }
             }
