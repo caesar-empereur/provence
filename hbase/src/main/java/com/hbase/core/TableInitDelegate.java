@@ -42,7 +42,7 @@ public final class TableInitDelegate {
         log.info("表结构初始化完成");
         for (Map.Entry<Htable, Boolean> entry : results.entrySet()){
             if (!entry.getValue()){
-                throw new InitException(entry.getKey().getTableName());
+                throw new InitException(entry.getKey().getTableName().get());
             }
         }
     }

@@ -2,15 +2,13 @@ package com.hbase.pool;
 
 import org.apache.hadoop.hbase.client.Connection;
 
-import java.sql.SQLException;
-
 /**
  * @author yingyang
  * @date 2018/7/11.
  */
-public interface ConnectionProvider {
+public interface ConnectionProvider<C extends Connection> {
 
-    Connection getConnection();
+    C getConnection();
 
-    void recycleConnection(Connection connection);
+    void recycleConnection(C connection);
 }

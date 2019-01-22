@@ -1,11 +1,15 @@
 package com.hbase.pool.hibernate;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import com.hbase.config.ConnectionConfig;
+import com.hbase.exception.ParseException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -18,7 +22,7 @@ import org.apache.hadoop.hbase.client.ConnectionFactory;
  * @author yingyang
  * @date 2018/7/11.
  */
-public class ConnectionPool {
+public class ConnectionPool<C extends Connection> {
     
     private static ConnectionPool instance;
     
@@ -28,39 +32,42 @@ public class ConnectionPool {
     
     private int minSize;
     
-    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private Supplier<ExecutorService> executorService = Executors::newSingleThreadExecutor;
+
+    private Configuration configuration ;
     
-    private Configuration configuration;
-    
-    private final ConcurrentLinkedQueue<Connection> allConnections = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<C> allConnections = new ConcurrentLinkedQueue<>();
     
     private ConnectionPool(ConnectionConfig connectionConfig) {
+        Optional.ofNullable(connectionConfig).orElseThrow(() -> new ParseException(""));
 
         log.info("开始实例化连接池");
         this.maxSize = connectionConfig.getMaxSize();
         this.minSize = connectionConfig.getMinSize();
-        
+
         if (configuration == null) {
-            System.setProperty("hadoop.home.dir", connectionConfig.getHadoopDir());
+            Optional.ofNullable(connectionConfig.getHadoopDir())
+                    .ifPresent((String s) -> System.setProperty("hadoop.home.dir",
+                                                                connectionConfig.getHadoopDir()));
             configuration = HBaseConfiguration.create();
             configuration.set(HConstants.ZOOKEEPER_QUORUM, connectionConfig.getQuorum());
         }
     }
     
-    public Connection poll(ObtainConnectionCallback callback) {
-        Connection conn = allConnections.poll();
+    public C poll(ObtainConnectionCallback callback) {
+        C conn = allConnections.poll();
         if (conn == null || conn.isClosed()) {
             synchronized (allConnections) {
                 return createConnection();
             }
         }
-        executorService.submit(callback::onCreateConnection);
+        executorService.get().submit(callback::onCreateConnection);
         return conn;
     }
     
     public void validate() {
         final int size = allConnections.size();
-        for (Connection connection : allConnections){
+        for (C connection : allConnections){
             if (connection.isClosed() || connection.isAborted()){
                 allConnections.remove(connection);
                 log.info("移除失效连接: " + connection);
@@ -79,7 +86,7 @@ public class ConnectionPool {
     
     private void removeConnections(int numberToBeRemoved) {
         for (int i = 0; i < numberToBeRemoved; i++) {
-            Connection connection = allConnections.poll();
+            C connection = allConnections.poll();
             if (connection != null) {
                 try {
                     connection.close();
@@ -95,15 +102,15 @@ public class ConnectionPool {
     
     public void addConnections(int numberOfConnections) {
         for (int i = 0; i < numberOfConnections; i++) {
-            Connection connection = createConnection();
+            C connection = createConnection();
             allConnections.offer(connection);
         }
         log.info("增加连接数：" + numberOfConnections);
     }
     
-    private Connection createConnection() {
+    private C createConnection() {
         try {
-            return ConnectionFactory.createConnection(configuration);
+            return (C)ConnectionFactory.createConnection(configuration);
         }
         catch (IOException e) {
             log.error(e);
@@ -111,7 +118,7 @@ public class ConnectionPool {
         }
     }
     
-    public void recycle(Connection connection) {
+    public void recycle(C connection) {
         if (connection.isClosed()) {
             return;
         }

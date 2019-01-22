@@ -7,10 +7,11 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.sun.jersey.server.impl.cdi.AbstractBean;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
@@ -37,20 +38,22 @@ import com.hbase.annotation.HbaseTableScan;
 import com.hbase.annotation.RowKey;
 import com.hbase.exception.ConfigurationException;
 import com.hbase.exception.ParseException;
-import com.hbase.repository.DefaultHbaseCrudRepository;
 import com.hbase.repository.HbaseCrudRepository;
+import com.hbase.repository.HbaseRepositoryFactoryBean;
 
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 /**
  * Created by leon on 2017/4/11.
  */
-public class HtableScanHandler<M, R, RK> implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
+public class HtableScanHandler implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
     
     private final Log log = LogFactory.getLog(this.getClass());
     
     private static final String CLASS_RESOURCE_PATTERN = "/**/*.class";
-    
+
+    private final Function<String, Set<Class>> classResolver = (String s) -> scanPackage(s);
+
     private ResourcePatternResolver resourcePatternResolver =
                                                             new PathMatchingResourcePatternResolver();
 
@@ -68,8 +71,8 @@ public class HtableScanHandler<M, R, RK> implements ImportBeanDefinitionRegistra
         String modelPackageName = attributes.getString("modelPackage");
         String repositoryPackageName = attributes.getString("repositoryPackage");
         
-        Set<Class> modelClasses = scanPackage(modelPackageName);
-        Set<Class> repositoryClasses = scanPackage(repositoryPackageName);
+        Set<Class> modelClasses = classResolver.apply(modelPackageName);
+        Set<Class> repositoryClasses = classResolver.apply(repositoryPackageName);
         
         Set<Htable> htables =
                             modelClasses.stream()
@@ -90,7 +93,8 @@ public class HtableScanHandler<M, R, RK> implements ImportBeanDefinitionRegistra
 
     private void registerRepository(Set<HbaseRepositoryInfo> hbaseRepositoryInfos, BeanDefinitionRegistry registry){
         for (HbaseRepositoryInfo info : hbaseRepositoryInfos){
-            BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.rootBeanDefinition(DefaultHbaseCrudRepository.class);
+            BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.rootBeanDefinition(HbaseRepositoryFactoryBean.class);
+            beanDefinitionBuilder.addConstructorArgValue(info.getRepositoryClass());
             AbstractBeanDefinition beanDefinition = beanDefinitionBuilder.getBeanDefinition();
             String beanName = beanNameGenerator.generateBeanName(beanDefinition);
             registry.registerBeanDefinition(beanName, beanDefinition);
@@ -98,6 +102,7 @@ public class HtableScanHandler<M, R, RK> implements ImportBeanDefinitionRegistra
     }
     
     private Set<Class> scanPackage(String packageName) {
+        Optional.ofNullable(packageName).filter(StringUtils::isNotBlank).orElseThrow(() -> new ParseException(""));
         Set<Class> classes = new LinkedHashSet<>();
         
         String pattern = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX
@@ -128,6 +133,7 @@ public class HtableScanHandler<M, R, RK> implements ImportBeanDefinitionRegistra
     }
     
     private Htable resolveModelClass(Class clazz) {
+        Optional.ofNullable(clazz).orElseThrow(() -> new ParseException(""));
         Set<Field> allFieldSet = new HashSet<>(Arrays.asList(clazz.getDeclaredFields()));
         Set<String> allFieldStringSet = allFieldSet.stream()
                                                    .map(Field::getName)
@@ -163,6 +169,7 @@ public class HtableScanHandler<M, R, RK> implements ImportBeanDefinitionRegistra
     }
     
     private HbaseRepositoryInfo resolveRepositoryClass(Class clazz) {
+        Optional.ofNullable(clazz).orElseThrow(() -> new ParseException(""));
         HbaseRepositoryInfo hbaseRepositoryInfo = new HbaseRepositoryInfo();
         for (Type repositoryType : clazz.getGenericInterfaces()) {
             if (repositoryType instanceof ParameterizedType

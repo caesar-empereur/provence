@@ -19,7 +19,7 @@ import com.hbase.pool.ConnectionProvider;
  * @author yingyang
  * @date 2018/7/11.
  */
-public class ConnectionPoolManager implements ConnectionProvider {
+public class ConnectionPoolManager implements ConnectionProvider<Connection> {
 
     private static ConnectionPoolManager instance;
 

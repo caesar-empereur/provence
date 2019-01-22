@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -28,13 +29,13 @@ public class TableManager {
     private List<TableName> tableNames;
     
     private Admin admin = null;
-    
+
     public Boolean initTable(Htable htable, InitFinishedCallback callback) {
         boolean succeed;
         Connection connection = null;
         try {
             connection = connectionProvider.getConnection();
-            TableName tableName = TableName.valueOf(htable.getTableName());
+            TableName tableName = TableName.valueOf(htable.getTableName().get());
             if (admin == null) {
                 admin = connection.getAdmin();
             }
@@ -78,4 +79,5 @@ public class TableManager {
             }
         }
     }
+
 }

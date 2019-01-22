@@ -10,10 +10,10 @@ import javax.annotation.Resource;
  * @author: yangyingyang
  * @date: 2019/1/7.
  */
-//@Service
+@Service
 public class PostService {
 
-//    @Resource
+    @Resource
     private AccountRepository accountRepository;
 
     public void save(){
