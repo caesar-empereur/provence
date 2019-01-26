@@ -1,7 +1,5 @@
 package com.hbase.reflection;
 
-import java.util.List;
-
 /**
  * Created by leon on 2018/4/18.
  */
@@ -23,7 +21,4 @@ public interface AnnotatedClass extends AnnotatedElement {
     
     boolean isAssignableFrom(AnnotatedClass c);
     
-    List<AnnotatedProperty> getDeclaredProperties(String accessType);
-    
-    List<AnnotatedMethod> getDeclaredMethods();
 }

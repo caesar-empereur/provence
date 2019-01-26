@@ -1,13 +1,14 @@
 package com.hbase.core;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -31,7 +32,6 @@ import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.data.repository.config.RepositoryBeanNameGenerator;
 import org.springframework.util.ClassUtils;
 
-import com.alibaba.fastjson.JSON;
 import com.hbase.annotation.HbaseRepository;
 import com.hbase.annotation.HbaseTable;
 import com.hbase.annotation.HbaseTableScan;
@@ -51,13 +51,18 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     private final Log log = LogFactory.getLog(this.getClass());
     
     private static final String CLASS_RESOURCE_PATTERN = "/**/*.class";
-
-    private final Function<String, Set<Class>> classResolver = (String s) -> scanPackage(s);
-
-    private ResourcePatternResolver resourcePatternResolver =
-                                                            new PathMatchingResourcePatternResolver();
-
-    private RepositoryBeanNameGenerator beanNameGenerator = new RepositoryBeanNameGenerator(this.getClass().getClassLoader());
+    
+    private final Function<String, Set<Class>> CLASS_RESOLVER = this::scanPackage;
+    
+    private Supplier<ResourcePatternResolver> resourcePatternResolver =
+                                                                      PathMatchingResourcePatternResolver::new;
+    
+    private Supplier<RepositoryBeanNameGenerator> beanNameGenerator =
+                                                                    () -> new RepositoryBeanNameGenerator(this.getClass()
+                                                                                                              .getClassLoader());
+    
+    private final BiFunction<AnnotatedElement, Class<? extends Annotation>, Boolean> IS_ANNOTATED =
+                                                                                            AnnotatedElement::isAnnotationPresent;
     
     private ClassLoader classLoader;
     
@@ -71,38 +76,38 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
         String modelPackageName = attributes.getString("modelPackage");
         String repositoryPackageName = attributes.getString("repositoryPackage");
         
-        Set<Class> modelClasses = classResolver.apply(modelPackageName);
-        Set<Class> repositoryClasses = classResolver.apply(repositoryPackageName);
+        Set<Class> modelClasses = CLASS_RESOLVER.apply(modelPackageName);
+        Set<Class> repositoryClasses = CLASS_RESOLVER.apply(repositoryPackageName);
         
-        Set<Htable> htables =
-                            modelClasses.stream()
-                                        .filter(clazz -> clazz.isAnnotationPresent(HbaseTable.class)
-                                                         && clazz.isAnnotationPresent(RowKey.class))
-                                        .map(this::resolveModelClass)
-                                        .collect(Collectors.toSet());
-        htables.forEach(htable -> TABLE_CONTAINNER.put(htable.getModelClass().get(), htable));
+        Set<Htable> htables = modelClasses.stream()
+                                          .map(this::resolveModelClass)
+                                          .filter(htable -> htable != null)
+                                          .collect(Collectors.toSet());
         
-        Set<HbaseRepositoryInfo> repositorySet =
-                                               repositoryClasses.stream()
-                                                                .filter(clazz -> clazz.isAnnotationPresent(HbaseRepository.class))
-                                                                .map(this::resolveRepositoryClass)
-                                                                .collect(Collectors.toSet());
+        Set<HbaseRepositoryInfo> repositorySet = repositoryClasses.stream()
+                                                                  .map(this::resolveRepositoryClass)
+                                                                  .filter(info -> info != null)
+                                                                  .collect(Collectors.toSet());
+        htables.forEach(table -> TABLE_CONTAINNER.put(table.getModelClass().get(), table));
         registerRepository(repositorySet, registry);
-        log.info("解析到表结构: " + JSON.toJSONString(htables));
     }
-
-    private void registerRepository(Set<HbaseRepositoryInfo> hbaseRepositoryInfos, BeanDefinitionRegistry registry){
-        for (HbaseRepositoryInfo info : hbaseRepositoryInfos){
-            BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.rootBeanDefinition(HbaseRepositoryFactoryBean.class);
+    
+    private void registerRepository(Set<HbaseRepositoryInfo> hbaseRepositoryInfos,
+                                    BeanDefinitionRegistry registry) {
+        for (HbaseRepositoryInfo info : hbaseRepositoryInfos) {
+            BeanDefinitionBuilder beanDefinitionBuilder =
+                                                        BeanDefinitionBuilder.rootBeanDefinition(HbaseRepositoryFactoryBean.class);
             beanDefinitionBuilder.addConstructorArgValue(info.getRepositoryClass());
             AbstractBeanDefinition beanDefinition = beanDefinitionBuilder.getBeanDefinition();
-            String beanName = beanNameGenerator.generateBeanName(beanDefinition);
+            String beanName = beanNameGenerator.get().generateBeanName(beanDefinition);
             registry.registerBeanDefinition(beanName, beanDefinition);
         }
     }
     
     private Set<Class> scanPackage(String packageName) {
-        Optional.ofNullable(packageName).filter(StringUtils::isNotBlank).orElseThrow(() -> new ParseException(""));
+        Optional.ofNullable(packageName)
+                .filter(StringUtils::isNotBlank)
+                .orElseThrow(() -> new ParseException(""));
         Set<Class> classes = new LinkedHashSet<>();
         
         String pattern = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX
@@ -110,13 +115,13 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                          + CLASS_RESOURCE_PATTERN;
         Resource[] resources;
         try {
-            resources = this.resourcePatternResolver.getResources(pattern);
+            resources = this.resourcePatternResolver.get().getResources(pattern);
         }
         catch (IOException e) {
             throw new ParseException("解析类异常");
         }
         MetadataReaderFactory readerFactory =
-                                            new CachingMetadataReaderFactory(this.resourcePatternResolver);
+                                            new CachingMetadataReaderFactory(this.resourcePatternResolver.get());
         Stream.of(resources).filter(Resource::isReadable).forEach(resource -> {
             Class clazz;
             try {
@@ -134,6 +139,12 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     
     private Htable resolveModelClass(Class clazz) {
         Optional.ofNullable(clazz).orElseThrow(() -> new ParseException(""));
+        if (!IS_ANNOTATED.apply(clazz, HbaseTable.class) || !IS_ANNOTATED.apply(clazz, RowKey.class)) {
+            return null;
+        }
+        if (clazz.isEnum() || clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())) {
+            return null;
+        }
         Set<Field> allFieldSet = new HashSet<>(Arrays.asList(clazz.getDeclaredFields()));
         Set<String> allFieldStringSet = allFieldSet.stream()
                                                    .map(Field::getName)
@@ -143,7 +154,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
         String tableName = hbaseTable.name();
         RowKey rowKey = (RowKey) clazz.getAnnotation(RowKey.class);
         Set<String> configuredRowkeyColumnSet = new HashSet<>(Arrays.asList(rowKey.columnList()));
-
+        
         Class rowkeyClass = null;
         Map<String, Class> rowkeyColumnMap = new HashMap<>();
         /* 校验配置的 rowkey 是否是真实存在的字段 */
@@ -170,6 +181,9 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     
     private HbaseRepositoryInfo resolveRepositoryClass(Class clazz) {
         Optional.ofNullable(clazz).orElseThrow(() -> new ParseException(""));
+        if (IS_ANNOTATED.apply(clazz, HbaseRepository.class)) {
+            return null;
+        }
         HbaseRepositoryInfo hbaseRepositoryInfo = new HbaseRepositoryInfo();
         for (Type repositoryType : clazz.getGenericInterfaces()) {
             if (repositoryType instanceof ParameterizedType
@@ -183,6 +197,9 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                         hbaseRepositoryInfo.setRowkey(modelClass);
                     }
                 }
+            }
+            else {
+                return null;
             }
         }
         hbaseRepositoryInfo.setRepositoryClass(clazz);

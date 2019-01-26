@@ -1,7 +1,9 @@
 package com.hbase.repository;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
+import com.hbase.exception.ParseException;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.lang.Nullable;
@@ -32,6 +34,7 @@ public class HbaseRepositoryFactoryBean<R extends HbaseCrudRepository> implement
     }
     
     public HbaseRepositoryFactoryBean(Class<R> repositoryInterface) {
+        Optional.ofNullable(repositoryInterface).orElseThrow(() -> new ParseException(""));
         this.repositoryInterface = repositoryInterface;
         this.repositorySupplier = () -> factorySupplier.get().getRepository(repositoryInterface);
     }
