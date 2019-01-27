@@ -24,7 +24,7 @@ public class TableManager {
     
     private final Log log = LogFactory.getLog(this.getClass());
     
-    private ConnectionProvider connectionProvider = ConnectionPoolManager.getInstance();
+    private ConnectionProvider<Connection> connectionProvider = ConnectionPoolManager.getInstance();
     
     private List<TableName> tableNames;
     

@@ -3,6 +3,7 @@ package com.hbase.annotation;
 import java.lang.annotation.*;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 
 import com.hbase.core.HtableScanHandler;
@@ -14,6 +15,7 @@ import com.hbase.core.HtableScanHandler;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Import(HtableScanHandler.class)
+@ComponentScan("com.hbase")
 public @interface HbaseTableScan {
 
     String modelPackage() default "";

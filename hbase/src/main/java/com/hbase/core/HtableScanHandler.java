@@ -12,6 +12,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.hbase.edm.EventMessageFactory;
 import com.hbase.reflection.ReflectManeger;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
@@ -55,6 +56,8 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     
     private final Function<String, Set<Class>> CLASS_RESOLVER = this::scanPackage;
     
+    private static final Function<Class, Set<Field>> FIELD_RESOLVER = ReflectManeger::getAllField;
+
     private Supplier<ResourcePatternResolver> resourcePatternResolver =
                                                                       PathMatchingResourcePatternResolver::new;
     
@@ -90,6 +93,8 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                                                                   .filter(this::equals)
                                                                   .collect(Collectors.toSet());
         htables.forEach(table -> TABLE_CONTAINNER.put(table.getModelClass().get(), table));
+
+        EventMessageFactory.getInstance().publish(new ModelPrepareEvent(htables));
         registerRepository(repositorySet, registry);
     }
     
@@ -146,7 +151,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
         if (clazz.isEnum() || clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())) {
             return null;
         }
-        Set<Field> allFieldSet = ReflectManeger.getAllField(clazz);
+        Set<Field> allFieldSet = FIELD_RESOLVER.apply(clazz);
 
         Set<String> allFieldStringSet = allFieldSet.stream()
                                                    .map(Field::getName)
