@@ -21,9 +21,9 @@ public class Htable implements Serializable{
     public Htable(Class modelClass,
                   String tableName,
                   Map<String, Class> rowKeyColumns) {
-        this.modelClass = Optional.ofNullable(modelClass);
-        this.tableName = Optional.ofNullable(tableName);
-        this.rowKeyColumns = Optional.ofNullable(rowKeyColumns);
+        this.modelClass = Optional.of(modelClass);
+        this.tableName = Optional.of(tableName);
+        this.rowKeyColumns = Optional.of(rowKeyColumns);
     }
 
 }

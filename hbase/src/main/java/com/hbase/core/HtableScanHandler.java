@@ -12,6 +12,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.hbase.reflection.ReflectManeger;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -61,7 +62,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                                                                     () -> new RepositoryBeanNameGenerator(this.getClass()
                                                                                                               .getClassLoader());
     
-    private final BiFunction<AnnotatedElement, Class<? extends Annotation>, Boolean> IS_ANNOTATED =
+    private static final BiFunction<AnnotatedElement, Class<? extends Annotation>, Boolean> IS_ANNOTATED =
                                                                                             AnnotatedElement::isAnnotationPresent;
     
     private ClassLoader classLoader;
@@ -81,12 +82,12 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
         
         Set<Htable> htables = modelClasses.stream()
                                           .map(this::resolveModelClass)
-                                          .filter(htable -> htable != null)
+                                          .filter(this::equals)
                                           .collect(Collectors.toSet());
         
         Set<HbaseRepositoryInfo> repositorySet = repositoryClasses.stream()
                                                                   .map(this::resolveRepositoryClass)
-                                                                  .filter(info -> info != null)
+                                                                  .filter(this::equals)
                                                                   .collect(Collectors.toSet());
         htables.forEach(table -> TABLE_CONTAINNER.put(table.getModelClass().get(), table));
         registerRepository(repositorySet, registry);
@@ -145,7 +146,8 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
         if (clazz.isEnum() || clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())) {
             return null;
         }
-        Set<Field> allFieldSet = new HashSet<>(Arrays.asList(clazz.getDeclaredFields()));
+        Set<Field> allFieldSet = ReflectManeger.getAllField(clazz);
+
         Set<String> allFieldStringSet = allFieldSet.stream()
                                                    .map(Field::getName)
                                                    .collect(Collectors.toSet());
@@ -179,9 +181,11 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
         return new Htable(clazz, tableName, rowkeyColumnMap);
     }
     
+
+    
     private HbaseRepositoryInfo resolveRepositoryClass(Class clazz) {
         Optional.ofNullable(clazz).orElseThrow(() -> new ParseException(""));
-        if (IS_ANNOTATED.apply(clazz, HbaseRepository.class)) {
+        if (IS_ANNOTATED.apply(clazz, HbaseRepository.class) ) {
             return null;
         }
         HbaseRepositoryInfo hbaseRepositoryInfo = new HbaseRepositoryInfo();
