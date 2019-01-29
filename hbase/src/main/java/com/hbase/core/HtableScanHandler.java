@@ -8,12 +8,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.hbase.edm.EventMessageFactory;
-import com.hbase.reflection.ReflectManeger;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,8 +37,12 @@ import com.hbase.annotation.HbaseRepository;
 import com.hbase.annotation.HbaseTable;
 import com.hbase.annotation.HbaseTableScan;
 import com.hbase.annotation.RowKey;
+import com.hbase.edm.EventMessage;
+import com.hbase.edm.ModePrepareListener;
+import com.hbase.edm.ModelPrepareEvent;
 import com.hbase.exception.ConfigurationException;
 import com.hbase.exception.ParseException;
+import com.hbase.reflection.ReflectManeger;
 import com.hbase.repository.HbaseCrudRepository;
 import com.hbase.repository.HbaseRepositoryFactoryBean;
 
@@ -48,8 +51,8 @@ import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 /**
  * Created by leon on 2017/4/11.
  */
-public class HtableScanHandler implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
-    
+public class HtableScanHandler implements ImportBeanDefinitionRegistrar, ResourceLoaderAware{
+
     private final Log log = LogFactory.getLog(this.getClass());
     
     private static final String CLASS_RESOURCE_PATTERN = "/**/*.class";
@@ -58,8 +61,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     
     private static final Function<Class, Set<Field>> FIELD_RESOLVER = ReflectManeger::getAllField;
 
-    private Supplier<ResourcePatternResolver> resourcePatternResolver =
-                                                                      PathMatchingResourcePatternResolver::new;
+    private ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
     
     private Supplier<RepositoryBeanNameGenerator> beanNameGenerator =
                                                                     () -> new RepositoryBeanNameGenerator(this.getClass()
@@ -71,6 +73,10 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     private ClassLoader classLoader;
     
     public static final ConcurrentMap<Class, Htable> TABLE_CONTAINNER = new ConcurrentHashMap<>();
+
+    static {
+        EventMessage.getInstance().register(new ModePrepareListener());
+    }
     
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
@@ -82,19 +88,17 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
         
         Set<Class> modelClasses = CLASS_RESOLVER.apply(modelPackageName);
         Set<Class> repositoryClasses = CLASS_RESOLVER.apply(repositoryPackageName);
-        
         Set<Htable> htables = modelClasses.stream()
                                           .map(this::resolveModelClass)
-                                          .filter(this::equals)
+                                          .filter((Htable htable) -> htable != null)
                                           .collect(Collectors.toSet());
         
         Set<HbaseRepositoryInfo> repositorySet = repositoryClasses.stream()
                                                                   .map(this::resolveRepositoryClass)
-                                                                  .filter(this::equals)
+                                                                  .filter((HbaseRepositoryInfo info) -> info !=null)
                                                                   .collect(Collectors.toSet());
         htables.forEach(table -> TABLE_CONTAINNER.put(table.getModelClass().get(), table));
-
-        EventMessageFactory.getInstance().publish(new ModelPrepareEvent(htables));
+        EventMessage.getInstance().publish(new ModelPrepareEvent(htables));
         registerRepository(repositorySet, registry);
     }
     
@@ -121,13 +125,13 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                          + CLASS_RESOURCE_PATTERN;
         Resource[] resources;
         try {
-            resources = this.resourcePatternResolver.get().getResources(pattern);
+            resources = this.resourcePatternResolver.getResources(pattern);
         }
         catch (IOException e) {
             throw new ParseException("解析类异常");
         }
         MetadataReaderFactory readerFactory =
-                                            new CachingMetadataReaderFactory(this.resourcePatternResolver.get());
+                                            new CachingMetadataReaderFactory(this.resourcePatternResolver);
         Stream.of(resources).filter(Resource::isReadable).forEach(resource -> {
             Class clazz;
             try {
@@ -190,7 +194,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     
     private HbaseRepositoryInfo resolveRepositoryClass(Class clazz) {
         Optional.ofNullable(clazz).orElseThrow(() -> new ParseException(""));
-        if (IS_ANNOTATED.apply(clazz, HbaseRepository.class) ) {
+        if (!IS_ANNOTATED.apply(clazz, HbaseRepository.class) ) {
             return null;
         }
         HbaseRepositoryInfo hbaseRepositoryInfo = new HbaseRepositoryInfo();
@@ -219,5 +223,5 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     public void setResourceLoader(ResourceLoader resourceLoader) {
         this.classLoader = resourceLoader.getClassLoader();
     }
-    
+
 }

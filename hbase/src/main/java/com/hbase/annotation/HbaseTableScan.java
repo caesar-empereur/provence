@@ -15,7 +15,6 @@ import com.hbase.core.HtableScanHandler;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Import(HtableScanHandler.class)
-@ComponentScan("com.hbase")
 public @interface HbaseTableScan {
 
     String modelPackage() default "";

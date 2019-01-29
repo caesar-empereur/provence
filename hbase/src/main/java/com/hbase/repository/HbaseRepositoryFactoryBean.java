@@ -39,7 +39,7 @@ public class HbaseRepositoryFactoryBean<R extends HbaseCrudRepository> implement
         this.repositorySupplier = () -> factorySupplier.get().getRepository(repositoryInterface);
     }
     
-    private class HbaseRepositoryFactory {
+    class HbaseRepositoryFactory {
         
         private R getRepository(Class<R> repositoryInterface) {
             ProxyFactory proxyFactory = new ProxyFactory();

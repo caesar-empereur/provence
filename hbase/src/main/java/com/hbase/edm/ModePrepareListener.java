@@ -1,6 +1,8 @@
-package com.hbase.core;
+package com.hbase.edm;
 
-import com.hbase.edm.AbstractEventListener;
+import com.hbase.core.Htable;
+import com.hbase.core.TableInitDelegate;
+import com.hbase.core.TableManager;
 import com.hbase.exception.InitException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -15,12 +17,11 @@ import java.util.function.Supplier;
 /**
  * Created by yang on 2019/1/27.
  */
-@Component
-public class ModePrepareListener extends AbstractEventListener<ModelPrepareEvent> {
+public class ModePrepareListener implements EventListener<ModelPrepareEvent> {
 
     private static final Log log = LogFactory.getLog(TableInitDelegate.class);
 
-    private static final Supplier<TableManager> TABLE_MANAGER = TableManager::new;
+    private static final TableManager TABLE_MANAGER = new TableManager();
 
     @Override
     public void onEvent(ModelPrepareEvent event) {
@@ -31,7 +32,7 @@ public class ModePrepareListener extends AbstractEventListener<ModelPrepareEvent
         ExecutorService executorService = Executors.newFixedThreadPool(htables.size());
         htables.forEach(table -> {
             Future<Boolean>
-                    result = executorService.submit(() -> TABLE_MANAGER.get().initTable(table, count::countDown));
+                    result = executorService.submit(() -> TABLE_MANAGER.initTable(table, count::countDown));
             try {
                 results.put(table, result.get());
             }
@@ -45,7 +46,7 @@ public class ModePrepareListener extends AbstractEventListener<ModelPrepareEvent
         catch (InterruptedException e) {
             e.printStackTrace();
         }
-        TABLE_MANAGER.get().closeAdmin();
+        TABLE_MANAGER.closeAdmin();
         log.info("表结构初始化完成");
         for (Map.Entry<Htable, Boolean> entry : results.entrySet()){
             if (!entry.getValue()){

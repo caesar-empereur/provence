@@ -13,10 +13,10 @@ import javax.annotation.Resource;
 @Service
 public class PostService {
 
-    @Resource
-    private AccountRepository accountRepository;
+//    @Resource
+//    private AccountRepository accountRepository;
 
     public void save(){
-        accountRepository.count();
+//        accountRepository.count();
     }
 }

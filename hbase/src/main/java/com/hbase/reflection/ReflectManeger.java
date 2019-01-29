@@ -1,8 +1,5 @@
 package com.hbase.reflection;
 
-import com.hbase.exception.ConfigurationException;
-import com.sun.org.apache.regexp.internal.RE;
-
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
@@ -11,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+
+import com.hbase.exception.ConfigurationException;
 
 /**
  * Created by yang on 2019/1/27.
@@ -39,19 +38,21 @@ public class ReflectManeger {
     }
     
     private static void lookupAllSuperClassFields(Class clazz, Set<Field> fields) {
-        fields.addAll(new HashSet<>(new ArrayList<>(Arrays.asList(clazz.getDeclaredFields()))));
+        fields.addAll(new ArrayList<>(Arrays.asList(clazz.getDeclaredFields())));
         Class superClass = clazz.getSuperclass();
-        while (superClass.getDeclaredFields().length > 0) {
-            lookupAllSuperClassFields(superClass, fields);
+        if(superClass.getDeclaredFields().length == 0) {
+            return;
         }
+        lookupAllSuperClassFields(superClass, fields);
     }
     
     private static void lookupAllSuperClassMethod(Class clazz, Set<Method> allMethodSet) {
-        allMethodSet.addAll(new HashSet<>(new ArrayList<>(Arrays.asList(clazz.getDeclaredMethods()))));
+        allMethodSet.addAll(new ArrayList<>(Arrays.asList(clazz.getDeclaredMethods())));
         Class superClass = clazz.getSuperclass();
-        while (superClass.getDeclaredFields().length > 0) {
-            lookupAllSuperClassMethod(superClass, allMethodSet);
+        if (superClass.getDeclaredFields().length == 0) {
+            return;
         }
+        lookupAllSuperClassMethod(superClass, allMethodSet);
     }
     
     private static Set<Method> getAllMethod(Class clazz, Set<Field> fields) {

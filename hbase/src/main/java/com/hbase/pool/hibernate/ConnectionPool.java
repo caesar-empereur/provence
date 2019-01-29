@@ -32,7 +32,7 @@ public class ConnectionPool<C extends Connection> {
     
     private int minSize;
     
-    private Supplier<ExecutorService> executorService = Executors::newSingleThreadExecutor;
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     private Configuration configuration ;
     
@@ -61,7 +61,7 @@ public class ConnectionPool<C extends Connection> {
                 return createConnection();
             }
         }
-        executorService.get().submit(callback::onCreateConnection);
+        executorService.submit(callback::onCreateConnection);
         return conn;
     }
     

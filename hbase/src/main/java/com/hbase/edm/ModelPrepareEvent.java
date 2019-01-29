@@ -1,4 +1,6 @@
-package com.hbase.core;
+package com.hbase.edm;
+
+import com.hbase.core.Htable;
 
 import java.util.Collection;
 import java.util.EventObject;

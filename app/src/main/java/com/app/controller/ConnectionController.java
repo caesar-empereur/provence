@@ -56,8 +56,8 @@ public class ConnectionController {
     @Value("${hadoop.dir}")
     private String hadoopDir;
 
-    @Resource
-    private AccountRepository accountRepository;
+//    @Resource
+//    private AccountRepository accountRepository;
     
     @ApiOperation(value = "测试获取的链接")
     @GetMapping(value = "/hikari")
