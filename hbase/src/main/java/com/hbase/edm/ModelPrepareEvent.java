@@ -1,21 +1,21 @@
 package com.hbase.edm;
 
-import com.hbase.core.Htable;
-
 import java.util.Collection;
 import java.util.EventObject;
+
+import com.hbase.reflection.HbaseEntityInformation;
 
 /**
  * Created by yang on 2019/1/27.
  */
 public class ModelPrepareEvent extends EventObject {
     
-    public ModelPrepareEvent(Collection<Htable> htables) {
+    public ModelPrepareEvent(Collection<HbaseEntityInformation> htables) {
         super(htables);
     }
     
     @Override
-    public Collection<Htable> getSource() {
-        return (Collection<Htable>) super.getSource();
+    public Collection<HbaseEntityInformation> getSource() {
+        return (Collection<HbaseEntityInformation>) super.getSource();
     }
 }

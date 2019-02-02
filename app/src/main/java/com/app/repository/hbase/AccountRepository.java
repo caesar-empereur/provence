@@ -1,14 +1,13 @@
 package com.app.repository.hbase;
 
-import com.app.model.hbase.Account;
-import com.hbase.annotation.HbaseRepository;
-import com.hbase.repository.HbaseCrudRepository;
+import com.app.model.hbase.HbaseAccount;
+import com.hbase.repository.HbaseRepository;
 
 /**
  * @Description
  * @author: yangyingyang
  * @date: 2018/12/17.
  */
-@HbaseRepository
-public interface AccountRepository extends HbaseCrudRepository<String, Account> {
+@com.hbase.annotation.HbaseRepository
+public interface AccountRepository extends HbaseRepository<String, HbaseAccount> {
 }

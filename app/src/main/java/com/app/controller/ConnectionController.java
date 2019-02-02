@@ -4,13 +4,13 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
-
-import com.app.repository.hbase.AccountRepository;
+import com.app.model.mongodb.MongoAccount;
+import com.app.repository.mongodb.MongoAccountRepository;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
@@ -20,17 +20,17 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.hibernate.cfg.AvailableSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import com.app.model.mysql.User;
-import com.app.repository.mysql.UserRepository;
-import com.app.vo.mysql.UserView;
 import com.zaxxer.hikari.hibernate.HikariConnectionProvider;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+
+import javax.annotation.Resource;
 
 /**
  * @Description
@@ -56,41 +56,27 @@ public class ConnectionController {
     @Value("${hadoop.dir}")
     private String hadoopDir;
 
+    @Resource
+    private MongoAccountRepository mongoAccountRepository;
+
 //    @Resource
 //    private AccountRepository accountRepository;
     
-    @ApiOperation(value = "测试获取的链接")
-    @GetMapping(value = "/hikari")
-    public void connection() {
-        Map<String, String> map = new HashMap<>();
-        map.put(AvailableSettings.DRIVER, "");
-        map.put(AvailableSettings.URL,
-                "jdbc:mysql://127.0.0.1:3306/hbase?useUnicode=true&characterEncoding=UTF-8");
-        map.put(AvailableSettings.USER, "root");
-        map.put(AvailableSettings.PASS, "123456");
-        map.put(AvailableSettings.DRIVER, "com.mysql.jdbc.Driver");
-
-        HikariConnectionProvider provider = new HikariConnectionProvider();
-        provider.configure(map);
-        try {
-            Connection connection = provider.getConnection();
-            ResultSet rs = connection.createStatement().executeQuery("select * from user");
-            while (rs.next()) {
-                String id = rs.getString("id");
-                String name = rs.getString("username");
-                log.info(id + " " + name);
-            }
-        }
-        catch (SQLException e) {
-            e.printStackTrace();
-        }
+    @ApiOperation(value = "count")
+    @GetMapping(value = "/mongo/save")
+    public void save(){
+        MongoAccount mongoAccount = new MongoAccount();
+        mongoAccount.setBalance(10.00);
+        mongoAccount.setCreateAt(new Date());
+        mongoAccount.setUsername(UUID.randomUUID().toString());
+        mongoAccountRepository.save(mongoAccount);
     }
 
-//    @ApiOperation(value = "count")
-//    @GetMapping(value = "/hbase")
-//    public void count(){
-//        accountRepository.count();
-//    }
+    @ApiOperation(value = "count")
+    @GetMapping(value = "/mongo/find")
+    public void select(){
+        MongoAccount mongoAccount = mongoAccountRepository.findById("5c53bfa846e356252cdf8400").get();
+    }
 
     @ApiOperation(value = "测试获取的链接")
     @GetMapping(value = "/hbase")
@@ -115,6 +101,5 @@ public class ConnectionController {
         catch (IOException e) {
             e.printStackTrace();
         }
-        
     }
 }

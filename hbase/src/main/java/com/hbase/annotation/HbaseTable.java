@@ -16,4 +16,6 @@ import java.lang.annotation.Target;
 public @interface HbaseTable {
 
     String name() ;
+
+    String id();
 }

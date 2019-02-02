@@ -1,25 +1,18 @@
 package com.app.model.hbase;
 
-import java.util.Date;
-
-import com.app.pojo.StringId;
-import com.hbase.annotation.*;
-import lombok.Data;
+import com.app.pojo.AccountPojo;
+import com.hbase.annotation.ColumnFamily;
+import com.hbase.annotation.CompoundColumFamily;
+import com.hbase.annotation.HbaseTable;
+import com.hbase.annotation.RowKey;
 
 /**
  * Created by leon on 2018/4/11.
  */
-@HbaseTable(name = "account")
+@HbaseTable(name = "account", id = "id")
 @CompoundColumFamily(columnFamily = { @ColumnFamily(name = "base-info", unique = true),
                                       @ColumnFamily(name = "balance-info", unique = true) }, constraint = true)
 @RowKey(columnList = { "id" })
-@Data
-public class Account extends StringId {
-    
-    private String username;
-    
-    private Date createAt;
-    
-    private Double balance;
+public class HbaseAccount extends AccountPojo {
     
 }

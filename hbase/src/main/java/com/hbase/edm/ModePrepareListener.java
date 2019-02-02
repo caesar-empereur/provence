@@ -4,6 +4,7 @@ import com.hbase.core.Htable;
 import com.hbase.core.TableInitDelegate;
 import com.hbase.core.TableManager;
 import com.hbase.exception.InitException;
+import com.hbase.reflection.HbaseEntityInformation;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Component;
@@ -21,20 +22,23 @@ public class ModePrepareListener implements EventListener<ModelPrepareEvent> {
 
     private static final Log log = LogFactory.getLog(TableInitDelegate.class);
 
-    private static final TableManager TABLE_MANAGER = new TableManager();
+    private static final Supplier<TableManager> TABLE_MANAGER_SUPPLIER = TableManager::new;
 
     @Override
     public void onEvent(ModelPrepareEvent event) {
-        Collection<Htable> htables = event.getSource();
+        Collection<HbaseEntityInformation> htables = event.getSource();
         log.info("开始表结构初始化");
+
+        TableManager tableManager = TABLE_MANAGER_SUPPLIER.get();
+
         CountDownLatch count = new CountDownLatch(htables.size());
-        Map<Htable, Boolean> results = new HashMap<>();
+        Map<HbaseEntityInformation, Boolean> results = new HashMap<>();
         ExecutorService executorService = Executors.newFixedThreadPool(htables.size());
-        htables.forEach(table -> {
+        htables.forEach(entityInfo -> {
             Future<Boolean>
-                    result = executorService.submit(() -> TABLE_MANAGER.initTable(table, count::countDown));
+                    result = executorService.submit(() -> tableManager.initTable(entityInfo, count::countDown));
             try {
-                results.put(table, result.get());
+                results.put(entityInfo, result.get());
             }
             catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
@@ -46,11 +50,11 @@ public class ModePrepareListener implements EventListener<ModelPrepareEvent> {
         catch (InterruptedException e) {
             e.printStackTrace();
         }
-        TABLE_MANAGER.closeAdmin();
+        tableManager.closeAdmin();
         log.info("表结构初始化完成");
-        for (Map.Entry<Htable, Boolean> entry : results.entrySet()){
+        for (Map.Entry<HbaseEntityInformation, Boolean> entry : results.entrySet()){
             if (!entry.getValue()){
-                throw new InitException(entry.getKey().getTableName().get());
+                throw new InitException(entry.getKey().getTableName());
             }
         }
         executorService.shutdown();

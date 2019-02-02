@@ -3,7 +3,9 @@ package com.hbase.core;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 
+import com.hbase.reflection.HbaseEntityInformation;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.TableName;
@@ -24,18 +26,20 @@ public class TableManager {
     
     private final Log log = LogFactory.getLog(this.getClass());
     
-    private ConnectionProvider<Connection> connectionProvider = ConnectionPoolManager.getInstance();
+    private Supplier<ConnectionProvider<Connection>> connectionProviderSupplier = ConnectionPoolManager::getInstance;
     
     private List<TableName> tableNames;
     
     private Admin admin = null;
 
-    public Boolean initTable(Htable htable, InitFinishedCallback callback) {
+    public Boolean initTable(HbaseEntityInformation htable, InitFinishedCallback callback) {
+        ConnectionProvider<Connection> connectionProvider = connectionProviderSupplier.get();
+
         boolean succeed;
         Connection connection = null;
         try {
             connection = connectionProvider.getConnection();
-            TableName tableName = TableName.valueOf(htable.getTableName().get());
+            TableName tableName = TableName.valueOf(htable.getTableName());
             if (admin == null) {
                 admin = connection.getAdmin();
             }

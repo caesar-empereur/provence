@@ -3,17 +3,20 @@ package com.hbase.repository;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import com.hbase.exception.ParseException;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.lang.Nullable;
+
+import com.hbase.core.HbaseRepositoryInfo;
+import com.hbase.exception.ParseException;
+import com.hbase.reflection.HbaseEntityInformation;
 
 /**
  * @Description
  * @author: yangyingyang
  * @date: 2019/1/15.
  */
-public class HbaseRepositoryFactoryBean<R extends HbaseCrudRepository> implements FactoryBean<R> {
+public class HbaseRepositoryFactoryBean<R extends HbaseRepository<T, ID>, T, ID> implements FactoryBean<R> {
     
     private Class<R> repositoryInterface;
     
@@ -33,18 +36,25 @@ public class HbaseRepositoryFactoryBean<R extends HbaseCrudRepository> implement
         return repositoryInterface;
     }
     
-    public HbaseRepositoryFactoryBean(Class<R> repositoryInterface) {
-        Optional.ofNullable(repositoryInterface).orElseThrow(() -> new ParseException(""));
-        this.repositoryInterface = repositoryInterface;
-        this.repositorySupplier = () -> factorySupplier.get().getRepository(repositoryInterface);
+    public HbaseRepositoryFactoryBean(HbaseRepositoryInfo<T, R, ID> repositoryInfo) {
+        Optional.ofNullable(repositoryInfo)
+                .map(HbaseRepositoryInfo::getEntityInformation)
+                .orElseThrow(() -> new ParseException("HbaseEntityInformation"));
+        Optional.ofNullable(repositoryInfo.getRepositoryClass())
+                .orElseThrow(() -> new ParseException("HbaseEntityInformation"));
+        this.repositoryInterface = repositoryInfo.getRepositoryClass();
+        this.repositorySupplier = () -> factorySupplier.get().getRepository(repositoryInterface, repositoryInfo.getEntityInformation());
     }
     
     class HbaseRepositoryFactory {
         
-        private R getRepository(Class<R> repositoryInterface) {
+        private R getRepository(Class<R> repositoryInterface,
+                                HbaseEntityInformation entityInformation) {
+            Optional.ofNullable(entityInformation)
+                    .orElseThrow(() -> new ParseException("HbaseEntityInformation"));
             ProxyFactory proxyFactory = new ProxyFactory();
-            DefaultHbaseCrudRepository defaultHbaseCrudRepository =
-                                                                  DefaultHbaseCrudRepository.Builder.build();
+            SimpleHbaseRepository defaultHbaseCrudRepository =
+                                                             new SimpleHbaseRepository(entityInformation);
             proxyFactory.setTarget(defaultHbaseCrudRepository);
             proxyFactory.setInterfaces(repositoryInterface);
             Object object = proxyFactory.getProxy(this.getClass().getClassLoader());

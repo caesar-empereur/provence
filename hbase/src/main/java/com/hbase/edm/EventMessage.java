@@ -1,9 +1,5 @@
 package com.hbase.edm;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.LineNumberReader;
-import java.lang.reflect.ParameterizedType;
 import java.util.EventObject;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;

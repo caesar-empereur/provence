@@ -70,5 +70,5 @@ public class ReflectManeger {
         }
         return allMethodSet;
     }
-    
+
 }
