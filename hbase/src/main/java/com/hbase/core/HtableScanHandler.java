@@ -199,7 +199,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     
 
     
-    private <T, R, ID> HbaseRepositoryInfo<T, R, ID> resolveRepositoryClass(Class clazz) {
+    private <T, R, ID> HbaseRepositoryInfo<T, R, ID> resolveRepositoryClass(Class<R> clazz) {
         Optional.ofNullable(clazz).orElseThrow(() -> new ParseException(""));
         if (!IS_ANNOTATED.apply(clazz, com.hbase.annotation.HbaseRepository.class) ) {
             return null;

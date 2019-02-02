@@ -43,18 +43,18 @@ public class HbaseRepositoryFactoryBean<R extends HbaseRepository<T, ID>, T, ID>
         Optional.ofNullable(repositoryInfo.getRepositoryClass())
                 .orElseThrow(() -> new ParseException("HbaseEntityInformation"));
         this.repositoryInterface = repositoryInfo.getRepositoryClass();
-        this.repositorySupplier = () -> factorySupplier.get().getRepository(repositoryInterface, repositoryInfo.getEntityInformation());
+        this.repositorySupplier = () -> factorySupplier.get().getRepository(repositoryInterface,
+                                                                            repositoryInfo.getEntityInformation());
     }
     
     class HbaseRepositoryFactory {
         
-        private R getRepository(Class<R> repositoryInterface,
-                                HbaseEntityInformation entityInformation) {
+        private R getRepository(Class<R> repositoryInterface, HbaseEntityInformation<T, ID> entityInformation) {
             Optional.ofNullable(entityInformation)
                     .orElseThrow(() -> new ParseException("HbaseEntityInformation"));
             ProxyFactory proxyFactory = new ProxyFactory();
-            SimpleHbaseRepository defaultHbaseCrudRepository =
-                                                             new SimpleHbaseRepository(entityInformation);
+            SimpleHbaseRepository<T, ID> defaultHbaseCrudRepository =
+                                                             new SimpleHbaseRepository<>(entityInformation);
             proxyFactory.setTarget(defaultHbaseCrudRepository);
             proxyFactory.setInterfaces(repositoryInterface);
             Object object = proxyFactory.getProxy(this.getClass().getClassLoader());
