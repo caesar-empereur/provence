@@ -5,11 +5,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
-import com.hbase.config.ConnectionConfig;
-import com.hbase.exception.ParseException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -17,6 +13,9 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
+
+import com.hbase.config.ConnectionConfig;
+import com.hbase.exception.ParseException;
 
 /**
  * @author yingyang
@@ -110,7 +109,7 @@ public class ConnectionPool<C extends Connection> {
     
     private C createConnection() {
         try {
-            return (C)ConnectionFactory.createConnection(configuration);
+            return (C) ConnectionFactory.createConnection(configuration);
         }
         catch (IOException e) {
             log.error(e);

@@ -27,6 +27,22 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 public class HbaseApplication implements WebMvcConfigurer {
 
     public static void main(String[] args) {
-        SpringApplication.run(HbaseApplication.class);
+//        SpringApplication.run(HbaseApplication.class);
+        System.out.println(hjehgf());
+    }
+
+    private static String hjehgf(){
+        String s ;
+        try {
+            s = 2/2 + "";
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Exception");
+        }
+        finally {
+            System.out.println("finally");
+        }
+        System.out.println("after finally");
+        return s;
     }
 }

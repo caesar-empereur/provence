@@ -21,7 +21,9 @@ import com.hbase.reflection.HbaseEntityInformation;
  * @date: 2018/12/17.
  */
 public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
-    
+
+    private static final ThreadLocal<Connection> CURRENT_CONNECTION = new ThreadLocal<>();
+
     private ConnectionProvider<Connection> connectionProvider = ConnectionPoolManager.getInstance();
 
     private HbaseEntityInformation<T, ID> entityInformation;
@@ -49,38 +51,22 @@ public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
 
     @Override
     public <S extends T> S save(S entity) {
-        Connection connection = connectionProvider.getConnection();
-        Table table;
-        try {
-            table = connection.getTable(TableName.valueOf(entityInformation.getTableName()));
-        }
-        catch (IOException e) {
-            throw new ConnectionException("获取不到表: " + entityInformation.getTableName()
-                                          + " "
-                                          + e.getMessage());
-        }
+        Table table = getConnectionTable();
         try {
             table.put(new Put(Bytes.toBytes(getRowkey(entity))));
         }
         catch (IOException e) {
             throw new OperationException(e.getMessage());
         }
-        connectionProvider.recycleConnection(connection);
+        finally {
+            closeTable(table);
+        }
         return entity;
     }
     
     @Override
     public <S extends T> Iterable<S> saveAll(Iterable<S> entities) {
-        Connection connection = connectionProvider.getConnection();
-        Table table;
-        try {
-            table = connection.getTable(TableName.valueOf(entityInformation.getTableName()));
-        }
-        catch (IOException e) {
-            throw new ConnectionException("获取不到表: " + entityInformation.getTableName()
-                                          + " "
-                                          + e.getMessage());
-        }
+        Table table = getConnectionTable();
         List<Put> putList = new ArrayList<>();
         entities.forEach(model -> putList.add(new Put(Bytes.toBytes(getRowkey(model)))));
         try {
@@ -89,7 +75,9 @@ public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
         catch (IOException e) {
             throw new OperationException(e.getMessage());
         }
-        connectionProvider.recycleConnection(connection);
+        finally {
+            closeTable(table);
+        }
         return entities;
     }
     
@@ -115,16 +103,7 @@ public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
     
     @Override
     public long count() {
-        Connection connection = connectionProvider.getConnection();
-        Table table;
-        try {
-            table = connection.getTable(TableName.valueOf(entityInformation.getTableName()));
-        }
-        catch (IOException e) {
-            throw new ConnectionException("获取不到表: " + entityInformation.getTableName()
-                                          + " "
-                                          + e.getMessage());
-        }
+        Table table = getConnectionTable();
         Scan scan = new Scan();
         scan.setFilter(new FirstKeyOnlyFilter());
         long rowCount = 0;
@@ -137,7 +116,9 @@ public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
         catch (IOException e) {
             throw new OperationException(e.getMessage());
         }
-        connectionProvider.recycleConnection(connection);
+        finally {
+            closeTable(table);
+        }
         return rowCount;
     }
     
@@ -148,52 +129,76 @@ public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
     
     @Override
     public void delete(T entity) {
-        Connection connection = connectionProvider.getConnection();
-        Table table;
+        Table table = getConnectionTable();;
+        Delete delete = new Delete(Bytes.toBytes(getRowkey(entity)));
         try {
-            table = connection.getTable(TableName.valueOf(entityInformation.getTableName()));
-        }
-        catch (IOException e) {
-            throw new ConnectionException("获取不到表: " + entityInformation.getTableName()
-                                          + " "
-                                          + e.getMessage());
-        }
-        try {
-            Delete delete = new Delete(Bytes.toBytes(getRowkey(entity)));
             table.delete(delete);
         }
         catch (IOException e) {
             throw new OperationException(e.getMessage());
         }
-        connectionProvider.recycleConnection(connection);
+        finally {
+            closeTable(table);
+        }
     }
     
     @Override
     public void deleteAll(Iterable<? extends T> entities) {
-        Connection connection = connectionProvider.getConnection();
-        Table table;
-        try {
-            table = connection.getTable(TableName.valueOf(entityInformation.getTableName()));
-        }
-        catch (IOException e) {
-            throw new ConnectionException("获取不到表: " + entityInformation.getTableName()
-                                          + " "
-                                          + e.getMessage());
-        }
+        Table table = getConnectionTable();
         List<Delete> deletes = new ArrayList<>();
         entities.forEach(model -> deletes.add(new Delete(Bytes.toBytes(getRowkey(model)))));
-        
+
         try {
             table.delete(deletes);
         }
         catch (IOException e) {
             throw new OperationException(e.getMessage());
         }
-        connectionProvider.recycleConnection(connection);
+        finally {
+            closeTable(table);
+        }
     }
     
     @Override
     public void deleteAll() {
         
+    }
+
+    private void closeTable(Table table){
+        try {
+            table.close();
+        }
+        catch (IOException e) {
+            //关闭table异常说明连接异常，连接不能回收
+            throw new ConnectionException(e.getMessage());
+        }
+        finally {
+            //关闭table出现异常，连接也要关闭
+            try {
+                CURRENT_CONNECTION.get().close();
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private Table getConnectionTable() {
+        Connection connection = connectionProvider.getConnection();
+        Table table;
+        try {
+            table = connection.getTable(TableName.valueOf(entityInformation.getTableName()));
+        }
+        catch (IOException e) {
+            throw new ConnectionException("获取不到表: " + entityInformation.getTableName()
+                                          + " "
+                                          + e.getMessage());
+        }
+        finally {
+            connectionProvider.recycleConnection(connection);
+        }
+        //有异常就不会执行到这里了,没异常才会到这里
+        CURRENT_CONNECTION.set(connection);
+        return table;
     }
 }

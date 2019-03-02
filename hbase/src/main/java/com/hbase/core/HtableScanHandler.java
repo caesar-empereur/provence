@@ -70,7 +70,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     
     private ClassLoader classLoader;
 
-    public static final ConcurrentMap<Class, HbaseEntityInformation> TABLE_CONTAINNER = new ConcurrentHashMap<>();
+    public  static final ConcurrentMap<Class, HbaseEntityInformation> TABLE_CONTAINNER = new ConcurrentHashMap<>();
 
     static {
         EventMessage.getInstance().register(new ModePrepareListener());
@@ -83,7 +83,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     }
 
     private <T> void registerBean(AnnotationMetadata importingClassMetadata,
-                        BeanDefinitionRegistry registry){
+                                  BeanDefinitionRegistry registry) {
         AnnotationAttributes attributes =
                 AnnotationAttributes.fromMap(importingClassMetadata.getAnnotationAttributes(HbaseTableScan.class.getName()));
         String modelPackageName = attributes.getString("modelPackage");
