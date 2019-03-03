@@ -33,7 +33,7 @@ public class MappingHbaseEntityInformation<T, ID> implements HbaseEntityInformat
 
     @Override
     public String getTableName() {
-        return null;
+        return this.tableName;
     }
     
     @Override

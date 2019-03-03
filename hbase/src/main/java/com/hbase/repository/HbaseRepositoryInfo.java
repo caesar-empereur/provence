@@ -1,4 +1,4 @@
-package com.hbase.core;
+package com.hbase.repository;
 
 import com.hbase.reflection.HbaseEntityInformation;
 import lombok.Data;

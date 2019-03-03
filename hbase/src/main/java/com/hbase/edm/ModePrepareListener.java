@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -16,9 +17,10 @@ import com.hbase.reflection.HbaseEntityInformation;
 /**
  * Created by yang on 2019/1/27.
  */
+@Slf4j
 public class ModePrepareListener implements EventListener<ModelPrepareEvent> {
 
-    private static final Log log = LogFactory.getLog(ModePrepareListener.class);
+//    private static final Log log = LogFactory.getLog(ModePrepareListener.class);
 
     private static final Supplier<TableManager> TABLE_MANAGER_SUPPLIER = TableManager::new;
 

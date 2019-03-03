@@ -3,6 +3,7 @@ package com.hbase.repository;
 import java.io.IOException;
 import java.util.*;
 
+import com.hbase.core.OperationType;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.FirstKeyOnlyFilter;
@@ -49,58 +50,46 @@ public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
         return rowkey;
     }
 
+//    private int getRowkeyUUID(){
+//        return UUID.randomUUID().toString().hashCode();
+//    }
+
     @Override
     public <S extends T> S save(S entity) {
         Table table = getConnectionTable();
-        try {
-            table.put(new Put(Bytes.toBytes(getRowkey(entity))));
-        }
-        catch (IOException e) {
-            throw new OperationException(e.getMessage());
-        }
-        finally {
-            closeTable(table);
-        }
+        doOperation(table, new Put(Bytes.toBytes(getRowkey(entity))), OperationType.SAVE);
         return entity;
     }
-    
+
     @Override
     public <S extends T> Iterable<S> saveAll(Iterable<S> entities) {
         Table table = getConnectionTable();
         List<Put> putList = new ArrayList<>();
         entities.forEach(model -> putList.add(new Put(Bytes.toBytes(getRowkey(model)))));
-        try {
-            table.put(putList);
-        }
-        catch (IOException e) {
-            throw new OperationException(e.getMessage());
-        }
-        finally {
-            closeTable(table);
-        }
+        doOperation(table, putList, OperationType.SAVE);
         return entities;
     }
-    
+
     @Override
     public Optional<T> findById(ID id) {
         return null;
     }
-    
+
     @Override
     public boolean existsById(ID id) {
         return false;
     }
-    
+
     @Override
     public Iterable<T> findAll() {
         return null;
     }
-    
+
     @Override
     public Iterable<T> findAllById(Iterable<ID> ids) {
         return null;
     }
-    
+
     @Override
     public long count() {
         Table table = getConnectionTable();
@@ -121,35 +110,45 @@ public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
         }
         return rowCount;
     }
-    
+
     @Override
     public void deleteById(ID id) {
-        
+
     }
-    
+
     @Override
     public void delete(T entity) {
         Table table = getConnectionTable();;
         Delete delete = new Delete(Bytes.toBytes(getRowkey(entity)));
-        try {
-            table.delete(delete);
-        }
-        catch (IOException e) {
-            throw new OperationException(e.getMessage());
-        }
-        finally {
-            closeTable(table);
-        }
+
+        doOperation(table, delete, OperationType.DELETE);
     }
-    
+
     @Override
     public void deleteAll(Iterable<? extends T> entities) {
         Table table = getConnectionTable();
         List<Delete> deletes = new ArrayList<>();
         entities.forEach(model -> deletes.add(new Delete(Bytes.toBytes(getRowkey(model)))));
 
+        doOperation(table, deletes, OperationType.DELETE);
+    }
+
+    @Override
+    public void deleteAll() {
+
+    }
+
+    private void doOperation(Table table,
+                             Object parameter,
+                             OperationType operationType) {
         try {
-            table.delete(deletes);
+            if (operationType == OperationType.SAVE) {
+                table.put((Put) parameter);
+                return;
+            }
+            if (operationType == OperationType.DELETE) {
+                table.delete((Delete) parameter);
+            }
         }
         catch (IOException e) {
             throw new OperationException(e.getMessage());
@@ -157,11 +156,6 @@ public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
         finally {
             closeTable(table);
         }
-    }
-    
-    @Override
-    public void deleteAll() {
-        
     }
 
     private void closeTable(Table table){

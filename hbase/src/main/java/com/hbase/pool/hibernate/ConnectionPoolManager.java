@@ -1,5 +1,11 @@
 package com.hbase.pool.hibernate;
 
+import com.hbase.config.ConnectionConfig;
+import com.hbase.pool.ConnectionProvider;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.hbase.client.Connection;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -7,25 +13,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.hbase.client.Connection;
-
-import com.hbase.config.ConnectionConfig;
-import com.hbase.pool.ConnectionProvider;
-
 /**
  * @author yingyang
  * @date 2018/7/11.
  */
+@Slf4j
 public class ConnectionPoolManager implements ConnectionProvider<Connection> {
 
     private static ConnectionPoolManager instance;
 
     private static final String WINDOWS_SYSTEM = "Windows";
 
-    private static final Log log = LogFactory.getLog(ConnectionPoolManager.class);
+//    private static final Log log = LogFactory.getLog(ConnectionPoolManager.class);
 
     private ConnectionPool connectionPool;
     

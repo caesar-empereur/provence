@@ -1,30 +1,29 @@
 package com.hbase.core;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Supplier;
-
+import com.hbase.pool.ConnectionProvider;
+import com.hbase.pool.hibernate.ConnectionPoolManager;
 import com.hbase.reflection.HbaseEntityInformation;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.TableDescriptor;
 import org.apache.hadoop.hbase.client.TableDescriptorBuilder;
 
-import com.hbase.pool.ConnectionProvider;
-import com.hbase.pool.hibernate.ConnectionPoolManager;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * @Description
  * @author: yangyingyang
  * @date: 2018/12/17.
  */
+@Slf4j
 public class TableManager {
     
-    private final Log log = LogFactory.getLog(this.getClass());
+//    private final Log log = LogFactory.getLog(this.getClass());
     
     private Supplier<ConnectionProvider<Connection>> connectionProviderSupplier = ConnectionPoolManager::getInstance;
     
@@ -65,7 +64,7 @@ public class TableManager {
             }
         }
         catch (IOException e) {
-            log.error(e);
+            log.error(e.getMessage());
             succeed = false;
         }
         connectionProvider.recycleConnection(connection);

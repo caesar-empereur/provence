@@ -1,31 +1,30 @@
 package com.hbase.pool.hibernate;
 
-import java.io.IOException;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import com.hbase.config.ConnectionConfig;
+import com.hbase.exception.ParseException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 
-import com.hbase.config.ConnectionConfig;
-import com.hbase.exception.ParseException;
+import java.io.IOException;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @author yingyang
  * @date 2018/7/11.
  */
+@Slf4j
 public class ConnectionPool<C extends Connection> {
     
     private static ConnectionPool instance;
     
-    private final Log log = LogFactory.getLog(this.getClass());
+//    private final Log log = LogFactory.getLog(this.getClass());
     
     private int maxSize;
     
@@ -112,7 +111,7 @@ public class ConnectionPool<C extends Connection> {
             return (C) ConnectionFactory.createConnection(configuration);
         }
         catch (IOException e) {
-            log.error(e);
+            log.error(e.getMessage());
             throw new RuntimeException("创建连接失败，检查配置");
         }
     }

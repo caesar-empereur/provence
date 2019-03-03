@@ -1,22 +1,20 @@
 package com.hbase.core;
 
-import java.io.IOException;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.*;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
+import com.hbase.annotation.HbaseTable;
+import com.hbase.annotation.HbaseTableScan;
+import com.hbase.annotation.RowKey;
+import com.hbase.edm.EventMessage;
+import com.hbase.edm.ModePrepareListener;
+import com.hbase.edm.ModelPrepareEvent;
+import com.hbase.exception.ConfigurationException;
+import com.hbase.exception.ParseException;
 import com.hbase.reflection.HbaseEntityInformation;
 import com.hbase.reflection.MappingHbaseEntityInformation;
+import com.hbase.reflection.ReflectManeger;
+import com.hbase.repository.HbaseRepository;
+import com.hbase.repository.HbaseRepositoryFactoryBean;
+import com.hbase.repository.HbaseRepositoryInfo;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -33,28 +31,25 @@ import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.data.repository.config.RepositoryBeanNameGenerator;
 import org.springframework.util.ClassUtils;
-
-import com.hbase.annotation.HbaseTable;
-import com.hbase.annotation.HbaseTableScan;
-import com.hbase.annotation.RowKey;
-import com.hbase.edm.EventMessage;
-import com.hbase.edm.ModePrepareListener;
-import com.hbase.edm.ModelPrepareEvent;
-import com.hbase.exception.ConfigurationException;
-import com.hbase.exception.ParseException;
-import com.hbase.reflection.ReflectManeger;
-import com.hbase.repository.HbaseRepository;
-import com.hbase.repository.HbaseRepositoryFactoryBean;
-
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
+
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.*;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by leon on 2017/4/11.
  */
 public class HtableScanHandler implements ImportBeanDefinitionRegistrar, ResourceLoaderAware{
 
-    private final Log log = LogFactory.getLog(this.getClass());
-    
     private static final String CLASS_RESOURCE_PATTERN = "/**/*.class";
     
     private static final Function<Class, Set<Field>> FIELD_RESOLVER = ReflectManeger::getAllField;
@@ -95,12 +90,12 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                                           .map(this::resolveModelClass)
                                           .filter((HbaseEntityInformation entity) -> entity != null)
                                           .collect(Collectors.toSet());
-
+        htables.forEach(table -> TABLE_CONTAINNER.put(table.getJavaType(), table));
         Set<HbaseRepositoryInfo> repositorySet = repositoryClasses.stream()
                                                                   .map(this::resolveRepositoryClass)
                                                                   .filter((HbaseRepositoryInfo info) -> info !=null)
                                                                   .collect(Collectors.toSet());
-        htables.forEach(table -> TABLE_CONTAINNER.put(table.getJavaType(), table));
+
         EventMessage.getInstance().publish(new ModelPrepareEvent(htables));
         registerRepository(repositorySet, registry);
     }
@@ -112,7 +107,9 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                                                         BeanDefinitionBuilder.rootBeanDefinition(HbaseRepositoryFactoryBean.class);
             beanDefinitionBuilder.addConstructorArgValue(info);
             AbstractBeanDefinition beanDefinition = beanDefinitionBuilder.getBeanDefinition();
-            String beanName = beanNameGenerator.get().generateBeanName(beanDefinition);
+            String beanName = info.getRepositoryClass().getSimpleName().replace("A","a");
+//            String beanName = beanNameGenerator.get().generateBeanName(beanDefinition);
+
             registry.registerBeanDefinition(beanName, beanDefinition);
         }
     }

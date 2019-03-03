@@ -9,5 +9,5 @@ import com.hbase.repository.HbaseRepository;
  * @date: 2018/12/17.
  */
 @com.hbase.annotation.HbaseRepository
-public interface AccountRepository extends HbaseRepository<String, HbaseAccount> {
+public interface AccountRepository extends HbaseRepository<HbaseAccount, String> {
 }

@@ -7,7 +7,6 @@ import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.lang.Nullable;
 
-import com.hbase.core.HbaseRepositoryInfo;
 import com.hbase.exception.ParseException;
 import com.hbase.reflection.HbaseEntityInformation;
 

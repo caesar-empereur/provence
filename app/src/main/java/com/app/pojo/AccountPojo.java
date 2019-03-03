@@ -14,7 +14,5 @@ public class AccountPojo extends StringId{
 
     private String username;
 
-    private Date createAt;
-
     private Double balance;
 }
