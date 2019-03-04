@@ -48,8 +48,8 @@ public class ConnectionController {
     @Value("${hadoop.dir}")
     private String hadoopDir;
 
-    @Resource
-    private MongoAccountRepository mongoAccountRepository;
+//    @Resource
+//    private MongoAccountRepository mongoAccountRepository;
 
     @Resource
     private AccountRepository accountRepository;
@@ -77,6 +77,7 @@ public class ConnectionController {
         hbaseAccount.setCreateTime(new Date());
         hbaseAccount.setBalance(10.00);
         hbaseAccount.setUsername("heheda");
+        hbaseAccount.setId(UUID.randomUUID().toString().replace("-",""));
         accountRepository.save(hbaseAccount);
     }
 

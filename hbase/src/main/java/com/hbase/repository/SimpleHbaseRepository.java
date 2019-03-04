@@ -50,14 +50,14 @@ public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
         return rowkey;
     }
 
-//    private int getRowkeyUUID(){
-//        return UUID.randomUUID().toString().hashCode();
-//    }
-
     @Override
     public <S extends T> S save(S entity) {
         Table table = getConnectionTable();
-        doOperation(table, new Put(Bytes.toBytes(getRowkey(entity))), OperationType.SAVE);
+        Put put = new Put(Bytes.toBytes(getRowkey(entity)));
+        put.addColumn("balance".getBytes(), null, Bytes.toBytes(10.00));
+        put.addColumn("username".getBytes(), null, Bytes.toBytes("heheda"));
+
+        doOperation(table, put, OperationType.SAVE);
         return entity;
     }
 
