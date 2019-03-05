@@ -3,12 +3,12 @@ package com.hbase.repository;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import com.hbase.reflection.HbaseEntity;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.lang.Nullable;
 
 import com.hbase.exception.ParseException;
-import com.hbase.reflection.HbaseEntityInformation;
 
 /**
  * @Description
@@ -38,9 +38,9 @@ public class HbaseRepositoryFactoryBean<R extends HbaseRepository<T, ID>, T, ID>
     public HbaseRepositoryFactoryBean(HbaseRepositoryInfo<T, R, ID> repositoryInfo) {
         Optional.ofNullable(repositoryInfo)
                 .map(HbaseRepositoryInfo::getEntityInformation)
-                .orElseThrow(() -> new ParseException("HbaseEntityInformation"));
+                .orElseThrow(() -> new ParseException("HbaseEntity"));
         Optional.ofNullable(repositoryInfo.getRepositoryClass())
-                .orElseThrow(() -> new ParseException("HbaseEntityInformation"));
+                .orElseThrow(() -> new ParseException("HbaseEntity"));
         this.repositoryInterface = repositoryInfo.getRepositoryClass();
         this.repositorySupplier = () -> factorySupplier.get().getRepository(repositoryInterface,
                                                                             repositoryInfo.getEntityInformation());
@@ -48,9 +48,9 @@ public class HbaseRepositoryFactoryBean<R extends HbaseRepository<T, ID>, T, ID>
     
     class HbaseRepositoryFactory {
         
-        private R getRepository(Class<R> repositoryInterface, HbaseEntityInformation<T, ID> entityInformation) {
+        private R getRepository(Class<R> repositoryInterface, HbaseEntity<T, ID> entityInformation) {
             Optional.ofNullable(entityInformation)
-                    .orElseThrow(() -> new ParseException("HbaseEntityInformation"));
+                    .orElseThrow(() -> new ParseException("HbaseEntity"));
             ProxyFactory proxyFactory = new ProxyFactory();
             SimpleHbaseRepository<T, ID> defaultHbaseCrudRepository =
                                                              new SimpleHbaseRepository<>(entityInformation);

@@ -17,6 +17,8 @@ import java.lang.annotation.Target;
 public @interface ColumnFamily {
 
     String name();
-    
+
+    String[] columnList();
+
     boolean unique() default false;
 }

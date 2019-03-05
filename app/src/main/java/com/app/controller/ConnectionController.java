@@ -1,27 +1,30 @@
 package com.app.controller;
 
-import com.app.model.hbase.HbaseAccount;
-import com.app.model.mongodb.MongoAccount;
-import com.app.repository.hbase.AccountRepository;
+import java.io.IOException;
+import java.util.Date;
+import java.util.UUID;
+
+import javax.annotation.Resource;
+
 import com.app.repository.mongodb.MongoAccountRepository;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.util.Bytes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Resource;
-import java.io.IOException;
-import java.util.Date;
-import java.util.UUID;
+import com.app.model.hbase.HbaseAccount;
+import com.app.model.mongodb.MongoAccount;
+import com.app.repository.hbase.AccountRepository;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 
 /**
  * @Description
@@ -31,10 +34,9 @@ import java.util.UUID;
 @Api(description = "guest接口")
 @RestController
 @RequestMapping("/connection")
-@Slf4j
 public class ConnectionController {
 
-//    private Logger log = LoggerFactory.getLogger(this.getClass());
+    private Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Value("${hbase.zookeeper.quorum}")
     private String quorum;
@@ -48,8 +50,8 @@ public class ConnectionController {
     @Value("${hadoop.dir}")
     private String hadoopDir;
 
-//    @Resource
-//    private MongoAccountRepository mongoAccountRepository;
+    @Resource
+    private MongoAccountRepository mongoAccountRepository;
 
     @Resource
     private AccountRepository accountRepository;
@@ -81,28 +83,4 @@ public class ConnectionController {
         accountRepository.save(hbaseAccount);
     }
 
-    @ApiOperation(value = "测试获取的链接")
-    @GetMapping(value = "/hbase")
-    public void hbase() {
-//        System.setProperty("hadoop.home.dir", hadoopDir);
-        Configuration configuration = HBaseConfiguration.create();
-
-//        configuration.set(HConstants.ZOOKEEPER_QUORUM, quorum);
-//        configuration.set(HConstants.ZOOKEEPER_CLIENT_PORT, port);
-
-        configuration.set(HConstants.ZOOKEEPER_QUORUM, quorum);
-        try {
-            org.apache.hadoop.hbase.client.Connection connection =
-                                                                 ConnectionFactory.createConnection(configuration);
-            Table table = connection.getTable(TableName.valueOf(tableName));
-            log.info("获取到连接" + table.getName());
-            ResultScanner results = table.getScanner(new Scan());
-            for (Result result : results) {
-                log.info("rowkey: " + Bytes.toLong(result.getRow()));
-            }
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 }

@@ -1,30 +1,31 @@
 package com.hbase.pool.hibernate;
 
-import com.hbase.config.ConnectionConfig;
-import com.hbase.exception.ParseException;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+
+import com.hbase.config.ConnectionConfig;
+import com.hbase.exception.ParseException;
+
 /**
  * @author yingyang
  * @date 2018/7/11.
  */
-@Slf4j
 public class ConnectionPool<C extends Connection> {
     
     private static ConnectionPool instance;
     
-//    private final Log log = LogFactory.getLog(this.getClass());
+    private final Log log = LogFactory.getLog(this.getClass());
     
     private int maxSize;
     

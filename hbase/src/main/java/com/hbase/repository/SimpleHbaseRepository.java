@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.*;
 
 import com.hbase.core.OperationType;
+import com.hbase.reflection.HbaseEntity;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.FirstKeyOnlyFilter;
@@ -14,7 +15,6 @@ import com.hbase.exception.ConnectionException;
 import com.hbase.exception.OperationException;
 import com.hbase.pool.ConnectionProvider;
 import com.hbase.pool.hibernate.ConnectionPoolManager;
-import com.hbase.reflection.HbaseEntityInformation;
 
 /**
  * @Description
@@ -27,9 +27,9 @@ public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
 
     private ConnectionProvider<Connection> connectionProvider = ConnectionPoolManager.getInstance();
 
-    private HbaseEntityInformation<T, ID> entityInformation;
+    private HbaseEntity<T, ID> entityInformation;
 
-    public SimpleHbaseRepository(HbaseEntityInformation<T, ID> entityInformation) {
+    public SimpleHbaseRepository(HbaseEntity<T, ID> entityInformation) {
         this.entityInformation = Optional.of(entityInformation).get();
     }
 
@@ -54,8 +54,8 @@ public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
     public <S extends T> S save(S entity) {
         Table table = getConnectionTable();
         Put put = new Put(Bytes.toBytes(getRowkey(entity)));
-        put.addColumn("balance".getBytes(), null, Bytes.toBytes(10.00));
-        put.addColumn("username".getBytes(), null, Bytes.toBytes("heheda"));
+        put.addColumn("aaa".getBytes(), "balance".getBytes(), Bytes.toBytes(10.00));
+        put.addColumn("bbb".getBytes(), "username".getBytes(), Bytes.toBytes("heheda"));
 
         doOperation(table, put, OperationType.SAVE);
         return entity;

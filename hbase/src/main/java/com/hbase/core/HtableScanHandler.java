@@ -1,15 +1,13 @@
 package com.hbase.core;
 
-import com.hbase.annotation.HbaseTable;
-import com.hbase.annotation.HbaseTableScan;
-import com.hbase.annotation.RowKey;
+import com.hbase.annotation.*;
 import com.hbase.edm.EventMessage;
 import com.hbase.edm.ModePrepareListener;
 import com.hbase.edm.ModelPrepareEvent;
 import com.hbase.exception.ConfigurationException;
 import com.hbase.exception.ParseException;
-import com.hbase.reflection.HbaseEntityInformation;
-import com.hbase.reflection.MappingHbaseEntityInformation;
+import com.hbase.reflection.HbaseEntity;
+import com.hbase.reflection.MappingHbaseEntity;
 import com.hbase.reflection.ReflectManeger;
 import com.hbase.repository.HbaseRepository;
 import com.hbase.repository.HbaseRepositoryFactoryBean;
@@ -65,7 +63,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     
     private ClassLoader classLoader;
 
-    public  static final ConcurrentMap<Class, HbaseEntityInformation> TABLE_CONTAINNER = new ConcurrentHashMap<>();
+    public  static final ConcurrentMap<Class, HbaseEntity> TABLE_CONTAINNER = new ConcurrentHashMap<>();
 
     static {
         EventMessage.getInstance().register(new ModePrepareListener());
@@ -86,10 +84,10 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
 
         Set<Class<T>> modelClasses = scanPackage(modelPackageName);
         Set<Class<T>> repositoryClasses =scanPackage(repositoryPackageName);
-        Set<HbaseEntityInformation> htables = modelClasses.stream()
-                                          .map(this::resolveModelClass)
-                                          .filter((HbaseEntityInformation entity) -> entity != null)
-                                          .collect(Collectors.toSet());
+        Set<HbaseEntity> htables = modelClasses.stream()
+                                               .map(this::resolveModelClass)
+                                               .filter((HbaseEntity entity) -> entity != null)
+                                               .collect(Collectors.toSet());
         htables.forEach(table -> TABLE_CONTAINNER.put(table.getJavaType(), table));
         Set<HbaseRepositoryInfo> repositorySet = repositoryClasses.stream()
                                                                   .map(this::resolveRepositoryClass)
@@ -147,19 +145,21 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
         return classes;
     }
     
-    private <T, ID> HbaseEntityInformation<T, ID> resolveModelClass(Class<T> clazz) {
+    private <T, ID> HbaseEntity<T, ID> resolveModelClass(Class<T> clazz) {
         Optional.ofNullable(clazz).orElseThrow(() -> new ParseException(""));
-        if (!IS_ANNOTATED.apply(clazz, HbaseTable.class) || !IS_ANNOTATED.apply(clazz, RowKey.class)) {
+        if (!IS_ANNOTATED.apply(clazz, HbaseTable.class) || !IS_ANNOTATED.apply(clazz, RowKey.class)
+            || !IS_ANNOTATED.apply(clazz, CompoundColumFamily.class)) {
             return null;
         }
         if (clazz.isEnum() || clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())) {
             return null;
         }
         Set<Field> allFieldSet = FIELD_RESOLVER.apply(clazz);
-
-        Set<String> allFieldStringSet = allFieldSet.stream()
-                                                   .map(Field::getName)
-                                                   .collect(Collectors.toSet());
+        Map<String, Class> allFieldMap = new HashMap<>();
+        Set<String> allFieldStringSet = allFieldSet.stream().map(field -> {
+            allFieldMap.put(field.getName(), field.getClass());
+            return field.getName();
+        }).collect(Collectors.toSet());
         
         HbaseTable hbaseTable = clazz.getAnnotation(HbaseTable.class);
         String tableName = hbaseTable.name();
@@ -168,7 +168,10 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
         Set<String> configuredRowkeyColumnSet = new HashSet<>(Arrays.asList(rowKey.columnList()));
         
         Map<String, Class> rowkeyColumnMap = new HashMap<>();
-        /* 校验配置的 rowkey 是否是真实存在的字段 */
+
+        /* 校验配置的 rowkey 是否是真实存在的字段
+        * 获取配置的 rowkey 的字段的类型
+        * */
         for (String rowkeyColumn : configuredRowkeyColumnSet) {
             if (!allFieldStringSet.contains(rowkeyColumn)) {
                 throw new ConfigurationException("找不到配置的 rowkey: " + rowkeyColumn);
@@ -186,12 +189,30 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                 }
             }
         }
+        //获取所有配置的字段的名称，类型，family
+        List<FamilyColumn> familyColumnList = new ArrayList<>();
+        CompoundColumFamily compoundColumFamily = clazz.getAnnotation(CompoundColumFamily.class);
+        List<String> columnListConfiged = new ArrayList<>();
+        for (ColumnFamily columnFamily : compoundColumFamily.columnFamily()){
+            for (String column : columnFamily.columnList()){
+                FamilyColumn familyColumn = new FamilyColumn();
+                familyColumn.setColumnName(column);
+                familyColumn.setFamilyName(columnFamily.name());
+                familyColumn.setColumnType(Optional.of(allFieldMap.get(column)).get());
+                familyColumnList.add(familyColumn);
+                columnListConfiged.add(column);
+            }
+        }
+        if (columnListConfiged.size() != new HashSet<>(columnListConfiged).size()) {
+            throw new ConfigurationException("不同 ColumnFamily 不能包含相同 column");
+        }
+        //校验id
         for (Field field : allFieldSet){
             if (field.getName().equals(hbaseTable.id())){
                 idClass =(Class<ID>) field.getType();
             }
         }
-        return new MappingHbaseEntityInformation<>(clazz, tableName, idClass, rowkeyColumnMap);
+        return new MappingHbaseEntity<>(clazz, tableName, idClass, rowkeyColumnMap, familyColumnList);
     }
     
 

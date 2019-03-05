@@ -1,6 +1,6 @@
 package com.hbase.repository;
 
-import com.hbase.reflection.HbaseEntityInformation;
+import com.hbase.reflection.HbaseEntity;
 import lombok.Data;
 
 /**
@@ -13,5 +13,5 @@ public class HbaseRepositoryInfo<T, R, ID> {
 
     private Class<R> repositoryClass;
 
-    private HbaseEntityInformation<T, ID> entityInformation;
+    private HbaseEntity<T, ID> entityInformation;
 }

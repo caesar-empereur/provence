@@ -1,7 +1,9 @@
 package com.hbase.reflection;
 
+import com.hbase.core.FamilyColumn;
 import org.springframework.lang.Nullable;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -11,7 +13,7 @@ import java.util.Optional;
  * @date: 2019/2/1.
  */
 @SuppressWarnings("all")
-public class MappingHbaseEntityInformation<T, ID> implements HbaseEntityInformation<T, ID> {
+public class MappingHbaseEntity<T, ID> implements HbaseEntity<T, ID> {
 
     private Class<T> modelClass;
 
@@ -21,14 +23,22 @@ public class MappingHbaseEntityInformation<T, ID> implements HbaseEntityInformat
 
     private Map<String, Class> rowKeyColumns;
 
-    public MappingHbaseEntityInformation(Class<T> modelClass,
-                                         String tableName,
-                                         Class<ID> idClass,
-                                         Map<String, Class> rowKeyColumns) {
+    private List<FamilyColumn> familyColumnList;
+
+    public MappingHbaseEntity(Class<T> modelClass,
+                              String tableName,
+                              Class<ID> idClass,
+                              Map<String, Class> rowKeyColumns,
+                              List<FamilyColumn> familyColumnList) {
         this.modelClass = Optional.of(modelClass).get();
         this.tableName = Optional.of(tableName).get();
         this.idClass = Optional.of(idClass).get();
         this.rowKeyColumns = Optional.of(rowKeyColumns).get();
+        this.familyColumnList = Optional.of(familyColumnList).get();
+    }
+
+    public List<FamilyColumn> getFamilyColumnList() {
+        return familyColumnList;
     }
 
     @Override
