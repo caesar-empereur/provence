@@ -229,7 +229,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                 for (Type modelType : ((ParameterizedTypeImpl) repositoryType).getActualTypeArguments()) {
                     Class modelClass = (Class) modelType;
                     if (TABLE_CONTAINNER.containsKey(modelClass)) {
-                        hbaseRepositoryInfo.setEntityInformation(TABLE_CONTAINNER.get(modelClass));
+                        hbaseRepositoryInfo.setHbaseEntity(TABLE_CONTAINNER.get(modelClass));
                     }
                 }
             }

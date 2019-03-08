@@ -63,7 +63,7 @@ public class ConnectionController {
         mongoAccount.setBalance(10.00);
         mongoAccount.setCreateTime(new Date());
         mongoAccount.setUsername(UUID.randomUUID().toString());
-//        mongoAccountRepository.save(mongoAccount);
+        mongoAccountRepository.save(mongoAccount);
     }
 
     @ApiOperation(value = "count")

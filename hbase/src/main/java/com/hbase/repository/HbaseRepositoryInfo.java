@@ -13,5 +13,5 @@ public class HbaseRepositoryInfo<T, R, ID> {
 
     private Class<R> repositoryClass;
 
-    private HbaseEntity<T, ID> entityInformation;
+    private HbaseEntity<T, ID> hbaseEntity;
 }
