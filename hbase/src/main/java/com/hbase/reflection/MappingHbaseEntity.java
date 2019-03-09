@@ -1,10 +1,10 @@
 package com.hbase.reflection;
 
 import com.hbase.core.FamilyColumn;
+import com.hbase.repository.RowkeyObtain;
 import org.springframework.lang.Nullable;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -13,27 +13,27 @@ import java.util.Optional;
  * @date: 2019/2/1.
  */
 @SuppressWarnings("all")
-public class MappingHbaseEntity<T, ID> implements HbaseEntity<T, ID> {
+public class MappingHbaseEntity<T, RK> implements HbaseEntity<T, RK> {
 
     private Class<T> modelClass;
 
-    private Class<ID> idClass;
+    private Class<RK> rkClass;
 
     private String tableName;
 
-    private Map<String, Class> rowKeyColumns;
-
     private List<FamilyColumn> familyColumnList;
+
+    private RowkeyObtain<T> rowkeyObtain;
 
     public MappingHbaseEntity(Class<T> modelClass,
                               String tableName,
-                              Class<ID> idClass,
-                              Map<String, Class> rowKeyColumns,
+                              Class<RK> rkClass,
+                              RowkeyObtain<T> rowkeyObtain,
                               List<FamilyColumn> familyColumnList) {
         this.modelClass = Optional.of(modelClass).get();
         this.tableName = Optional.of(tableName).get();
-        this.idClass = Optional.of(idClass).get();
-        this.rowKeyColumns = Optional.of(rowKeyColumns).get();
+        this.rkClass = Optional.of(rkClass).get();
+        this.rowkeyObtain = Optional.of(rowkeyObtain).get();
         this.familyColumnList = Optional.of(familyColumnList).get();
     }
 
@@ -53,13 +53,13 @@ public class MappingHbaseEntity<T, ID> implements HbaseEntity<T, ID> {
     
     @Nullable
     @Override
-    public ID getId(T entity) {
-        return null;
+    public Long getRowkey(T entity) {
+        return this.rowkeyObtain.getRowkey(entity);
     }
-    
+
     @Override
-    public Class<ID> getIdType() {
-        return this.idClass;
+    public Class<RK> getRowkeyType() {
+        return this.rkClass;
     }
     
     @Override
@@ -67,8 +67,4 @@ public class MappingHbaseEntity<T, ID> implements HbaseEntity<T, ID> {
         return this.modelClass;
     }
     
-    @Override
-    public Map<String, Class> getRowkeyColumns() {
-        return this.rowKeyColumns;
-    }
 }

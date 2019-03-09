@@ -1,9 +1,13 @@
 package com.hbase.repository;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.math.BigDecimal;
 import java.util.*;
 
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.FirstKeyOnlyFilter;
@@ -16,23 +20,24 @@ import com.hbase.exception.OperationException;
 import com.hbase.pool.ConnectionProvider;
 import com.hbase.pool.hibernate.ConnectionPoolManager;
 import com.hbase.reflection.HbaseEntity;
+import org.springframework.util.CollectionUtils;
 
 /**
  * @Description
  * @author: yangyingyang
  * @date: 2018/12/17.
  */
-public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
+public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
 
     private static final ThreadLocal<Connection> CURRENT_CONNECTION = new ThreadLocal<>();
 
     private ConnectionProvider<Connection> connectionProvider = ConnectionPoolManager.getInstance();
 
-    private HbaseEntity<T, ID> hbaseEntity;
+    private HbaseEntity<T, RK> hbaseEntity;
 
     private Map<String, FamilyColumn> familyColumnMap;
 
-    public SimpleHbaseRepository(HbaseEntity<T, ID> hbaseEntity) {
+    public SimpleHbaseRepository(HbaseEntity<T, RK> hbaseEntity) {
         this.hbaseEntity = Optional.of(hbaseEntity).get();
         familyColumnMap = new HashMap<>();
         for (FamilyColumn familyColumn : hbaseEntity.getFamilyColumnList()){
@@ -40,31 +45,14 @@ public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
         }
     }
 
-    private int getRowkey(T entity){
-        Map<String, Object> entityMap = JSON.parseObject(JSON.toJSONString(entity), Map.class);
-        //字段为空的需要 去除掉
-        for (Map.Entry<String, Object> entry : entityMap.entrySet()){
-            if (entry.getValue() == null){
-                entityMap.remove(entry);
-            }
-        }
-        int rowkey = 0;
-        // 生成 rowkey
-        Set<Map.Entry<String, Class>> entrySet = hbaseEntity.getRowkeyColumns().entrySet();
-        for (Map.Entry<String, Class> entry : entrySet) {
-            rowkey = rowkey + entityMap.get(entry.getKey()).hashCode();
-        }
-        return rowkey;
-    }
-
     @Override
-    public <S extends T> S save(S entity) {
+    public T save(T entity) {
         doSaveOperation(Arrays.asList(toPut(entity)));
         return entity;
     }
 
-    private <S extends T> Put toPut(S entity){
-        Put put = new Put(Bytes.toBytes(getRowkey(entity)));
+    private Put toPut(T entity){
+        Put put = new Put(Bytes.toBytes(hbaseEntity.getRowkey(entity)));
         Map<String, Object> entityMap = JSON.parseObject(JSON.toJSONString(entity), Map.class);
         for (Map.Entry<String, Object> objectFieldValue : entityMap.entrySet()){
             if (objectFieldValue.getValue() == null){
@@ -78,7 +66,7 @@ public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
     }
 
     @Override
-    public <S extends T> Iterable<S> saveAll(Iterable<S> entities) {
+    public Collection<T> saveAll(Collection<T> entities) {
         List<Put> putList = new ArrayList<>();
         entities.forEach(model -> putList.add(toPut(model)));
         doSaveOperation(putList);
@@ -86,23 +74,27 @@ public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
     }
 
     @Override
-    public Optional<T> findById(ID id) {
-        return null;
+    public T findByRowkey(RK id) {
+        Get get = new Get(convertToByte(id));
+        List<T> entitys = doGetOperation(Arrays.asList(get));
+        if (CollectionUtils.isEmpty(entitys)){
+            return null;
+        }
+        return entitys.get(0);
     }
 
     @Override
-    public boolean existsById(ID id) {
-        return false;
+    public boolean existsByRowkey(RK id) {
+        Get get = new Get(convertToByte(id));
+        List<T> entitys = doGetOperation(Arrays.asList(get));
+        return CollectionUtils.isEmpty(entitys);
     }
 
     @Override
-    public Iterable<T> findAll() {
-        return null;
-    }
-
-    @Override
-    public Iterable<T> findAllById(Iterable<ID> ids) {
-        return null;
+    public Collection<T> findAllByRowkey(Collection<RK> rks) {
+        List<Get> gets = new ArrayList<>();
+        rks.forEach(rk -> gets.add(new Get(convertToByte(rk))));
+        return doGetOperation(gets);
     }
 
     @Override
@@ -127,28 +119,18 @@ public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
     }
 
     @Override
-    public void deleteById(ID id) {
-
-    }
-
-    @Override
-    public void delete(T entity) {
-        Delete delete = new Delete(Bytes.toBytes(getRowkey(entity)));
+    public void deleteByRowkey(RK rk) {
+        Delete delete = new Delete(convertToByte(rk));
 
         doDeleteOperation(Arrays.asList(delete));
     }
 
     @Override
-    public void deleteAll(Iterable<? extends T> entities) {
+    public void deleteAll(Collection<RK> rks) {
         List<Delete> deletes = new ArrayList<>();
-        entities.forEach(model -> deletes.add(new Delete(Bytes.toBytes(getRowkey(model)))));
+        rks.forEach(rk -> deletes.add(new Delete(convertToByte(rk))));
 
         doDeleteOperation(deletes);
-    }
-
-    @Override
-    public void deleteAll() {
-
     }
 
     private void doSaveOperation(List<Put> puts) {
@@ -164,6 +146,47 @@ public class SimpleHbaseRepository<T, ID> implements HbaseRepository<T, ID> {
         }
     }
 
+    private List<T> doGetOperation(List<Get> puts) {
+        Table table = getConnectionTable();
+        List<T> entityList = new ArrayList<>();
+        try {
+            Result[] results = table.get(puts);
+            if (results == null || results.length==0){
+                return entityList;
+            }
+            for (Result result : results){
+                Map<String,Object> entityMap = new HashMap<>();
+                for (Cell cell : result.listCells()){
+                    entityMap.put(Bytes.toString(CellUtil.cloneQualifier(cell)),
+                                  byteToObject(CellUtil.cloneValue(cell)));
+                }
+                T entity = JSON.parseObject(JSON.toJSONString(entityMap), hbaseEntity.getJavaType());
+                entityList.add(entity);
+            }
+            return entityList;
+        }
+        catch (IOException e) {
+            throw new OperationException(e.getMessage());
+        }
+        finally {
+            closeTable(table);
+        }
+    }
+
+    private Object byteToObject(byte[] bytes) {
+        Object obj = null;
+        try {
+            ByteArrayInputStream bi = new ByteArrayInputStream(bytes);
+            ObjectInputStream oi = new ObjectInputStream(bi);
+            obj = oi.readObject();
+            bi.close();
+            oi.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return obj;
+    }
+    
     private void doDeleteOperation(List<Delete> deletes) {
         Table table = getConnectionTable();
         try {

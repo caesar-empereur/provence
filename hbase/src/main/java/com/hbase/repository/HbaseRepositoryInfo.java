@@ -9,9 +9,9 @@ import lombok.Data;
  * @date: 2019/1/5.
  */
 @Data
-public class HbaseRepositoryInfo<T, R, ID> {
+public class HbaseRepositoryInfo<T, R, RK> {
 
     private Class<R> repositoryClass;
 
-    private HbaseEntity<T, ID> hbaseEntity;
+    private HbaseEntity<T, RK> hbaseEntity;
 }
