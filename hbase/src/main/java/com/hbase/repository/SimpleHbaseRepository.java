@@ -98,6 +98,20 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
     }
 
     @Override
+    public Collection<T> scan(RK start, RK end) {
+        Scan scan = new Scan(convertToByte(start), convertToByte(end));
+        Table table = getConnectionTable();
+        ResultScanner resultScanner;
+        try {
+            resultScanner = table.getScanner(scan);
+        }
+        catch (IOException e) {
+            throw new OperationException(e.getMessage());
+        }
+        return resolveResult(resultScanner);
+    }
+
+    @Override
     public long count() {
         Table table = getConnectionTable();
         Scan scan = new Scan();
@@ -148,22 +162,10 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
 
     private List<T> doGetOperation(List<Get> puts) {
         Table table = getConnectionTable();
-        List<T> entityList = new ArrayList<>();
+
         try {
             Result[] results = table.get(puts);
-            if (results == null || results.length==0){
-                return entityList;
-            }
-            for (Result result : results){
-                Map<String,Object> entityMap = new HashMap<>();
-                for (Cell cell : result.listCells()){
-                    entityMap.put(Bytes.toString(CellUtil.cloneQualifier(cell)),
-                                  byteToObject(CellUtil.cloneValue(cell)));
-                }
-                T entity = JSON.parseObject(JSON.toJSONString(entityMap), hbaseEntity.getJavaType());
-                entityList.add(entity);
-            }
-            return entityList;
+            return resolveResult(Arrays.asList(results));
         }
         catch (IOException e) {
             throw new OperationException(e.getMessage());
@@ -171,6 +173,23 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
         finally {
             closeTable(table);
         }
+    }
+
+    private List<T> resolveResult(Iterable<Result> results){
+        List<T> entityList = new ArrayList<>();
+        if (results == null){
+            return entityList;
+        }
+        for (Result result : results){
+            Map<String,Object> entityMap = new HashMap<>();
+            for (Cell cell : result.listCells()){
+                entityMap.put(Bytes.toString(CellUtil.cloneQualifier(cell)),
+                              byteToObject(CellUtil.cloneValue(cell)));
+            }
+            T entity = JSON.parseObject(JSON.toJSONString(entityMap), hbaseEntity.getJavaType());
+            entityList.add(entity);
+        }
+        return entityList;
     }
 
     private Object byteToObject(byte[] bytes) {

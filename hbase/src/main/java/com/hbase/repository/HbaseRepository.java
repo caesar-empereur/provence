@@ -16,6 +16,8 @@ public interface HbaseRepository<T, RK> {
 
     Collection<T> findAllByRowkey(Collection<RK> rks);
 
+    Collection<T> scan(RK start, RK end);
+
     boolean existsByRowkey(RK id);
 
     long count();
