@@ -52,7 +52,7 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
     }
 
     private Put toPut(T entity){
-        Put put = new Put(Bytes.toBytes(hbaseEntity.getRowkey(entity)));
+        Put put = new Put(convertToByte(hbaseEntity.getRowkey(entity)));
         Map<String, Object> entityMap = JSON.parseObject(JSON.toJSONString(entity), Map.class);
         for (Map.Entry<String, Object> objectFieldValue : entityMap.entrySet()){
             if (objectFieldValue.getValue() == null){

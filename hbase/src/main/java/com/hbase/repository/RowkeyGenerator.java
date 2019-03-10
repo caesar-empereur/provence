@@ -5,7 +5,7 @@ package com.hbase.repository;
  * @author: yangyingyang
  * @date: 2019/3/9.
  */
-public interface RowkeyObtain<T> {
+public interface RowkeyGenerator<T, RK> {
 
-    Long getRowkey(T entity);
+    RK getRowkey(T entity);
 }

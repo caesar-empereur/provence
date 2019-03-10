@@ -17,5 +17,4 @@ public @interface HbaseTable {
 
     String name() ;
 
-    String id();
 }

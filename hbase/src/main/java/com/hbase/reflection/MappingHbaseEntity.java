@@ -1,10 +1,11 @@
 package com.hbase.reflection;
 
 import com.hbase.core.FamilyColumn;
-import com.hbase.repository.RowkeyObtain;
+import com.hbase.repository.RowkeyGenerator;
 import org.springframework.lang.Nullable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -17,23 +18,21 @@ public class MappingHbaseEntity<T, RK> implements HbaseEntity<T, RK> {
 
     private Class<T> modelClass;
 
-    private Class<RK> rkClass;
-
     private String tableName;
 
     private List<FamilyColumn> familyColumnList;
 
-    private RowkeyObtain<T> rowkeyObtain;
+    private Map<String, Class> rowkeyColumnMap;
+
+    private RowkeyGenerator<T, RK> rowkeyGenerator;
 
     public MappingHbaseEntity(Class<T> modelClass,
                               String tableName,
-                              Class<RK> rkClass,
-                              RowkeyObtain<T> rowkeyObtain,
+                              Map<String, Class> rowkeyColumnMap,
                               List<FamilyColumn> familyColumnList) {
         this.modelClass = Optional.of(modelClass).get();
         this.tableName = Optional.of(tableName).get();
-        this.rkClass = Optional.of(rkClass).get();
-        this.rowkeyObtain = Optional.of(rowkeyObtain).get();
+        this.rowkeyColumnMap = Optional.of(rowkeyColumnMap).get();
         this.familyColumnList = Optional.of(familyColumnList).get();
     }
 
@@ -53,18 +52,20 @@ public class MappingHbaseEntity<T, RK> implements HbaseEntity<T, RK> {
     
     @Nullable
     @Override
-    public Long getRowkey(T entity) {
-        return this.rowkeyObtain.getRowkey(entity);
+    public RK getRowkey(T entity) {
+        return this.rowkeyGenerator.getRowkey(entity);
     }
 
-    @Override
-    public Class<RK> getRowkeyType() {
-        return this.rkClass;
+    public Map<String, Class> getRowkeyColumnMap() {
+        return this.rowkeyColumnMap;
     }
-    
+
     @Override
     public Class<T> getJavaType() {
         return this.modelClass;
     }
-    
+
+    public void setRowkeyGenerator(RowkeyGenerator<T, RK> rowkeyGenerator) {
+        this.rowkeyGenerator = rowkeyGenerator;
+    }
 }

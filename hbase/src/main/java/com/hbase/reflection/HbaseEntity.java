@@ -1,6 +1,7 @@
 package com.hbase.reflection;
 
 import java.util.List;
+import java.util.Map;
 
 import com.hbase.core.FamilyColumn;
 
@@ -13,9 +14,9 @@ public interface HbaseEntity<T, RK> {
 
     Class<T> getJavaType();
 
-    Long getRowkey(T entity);
+    RK getRowkey(T entity);
 
-    Class<RK> getRowkeyType();
+    Map<String, Class> getRowkeyColumnMap();
 
     String getTableName();
 
