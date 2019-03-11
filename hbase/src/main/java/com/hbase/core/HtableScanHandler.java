@@ -96,8 +96,8 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                                                                   .filter((HbaseRepositoryInfo info) -> info !=null)
                                                                   .collect(Collectors.toSet());
 
-//        EventMessage.getInstance().publish(new ModelPrepareEvent(hbaseEntitySet));
-//        registerRepository(repositorySet, registry);
+        EventMessage.getInstance().publish(new ModelPrepareEvent(hbaseEntitySet));
+        registerRepository(repositorySet, registry);
         System.out.printf("");
     }
     
@@ -108,8 +108,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                                                         BeanDefinitionBuilder.rootBeanDefinition(HbaseRepositoryFactoryBean.class);
             beanDefinitionBuilder.addConstructorArgValue(info);
             AbstractBeanDefinition beanDefinition = beanDefinitionBuilder.getBeanDefinition();
-            String beanName = info.getRepositoryClass().getSimpleName().replace("A","a");
-//            String beanName = beanNameGenerator.get().generateBeanName(beanDefinition);
+            String beanName = beanNameGenerator.get().generateBeanName(beanDefinition);
 
             registry.registerBeanDefinition(beanName, beanDefinition);
         }
@@ -259,7 +258,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                                 return (RK) rowkey;
                             }
                         };
-                        ((MappingHbaseEntity) hbaseEntity).setRowkeyGenerator(rowkeyGenerator);
+                        ((MappingHbaseEntity<T,RK>) hbaseEntity).setRowkeyGenerator(rowkeyGenerator);
                         TABLE_CONTAINNER.put(typeClass, hbaseEntity);
                     }
                 }
