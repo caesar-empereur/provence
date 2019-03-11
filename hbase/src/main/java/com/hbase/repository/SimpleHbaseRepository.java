@@ -54,13 +54,14 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
     private Put toPut(T entity){
         Put put = new Put(convertToByte(hbaseEntity.getRowkey(entity)));
         Map<String, Object> entityMap = JSON.parseObject(JSON.toJSONString(entity), Map.class);
-        for (Map.Entry<String, Object> objectFieldValue : entityMap.entrySet()){
-            if (objectFieldValue.getValue() == null){
-                entityMap.remove(objectFieldValue);
+        for (Map.Entry<String, Object> objectKeyValue : entityMap.entrySet()){
+            if (objectKeyValue.getValue() == null || hbaseEntity.getRowkeyColumnMap().get(objectKeyValue.getKey()) != null){
+                entityMap.remove(objectKeyValue.getKey());
+                continue;
             }
-            put.addColumn(familyColumnMap.get(objectFieldValue.getKey()).getFamilyName().getBytes(),
-                          objectFieldValue.getKey().getBytes(),
-                          convertToByte(objectFieldValue.getValue()));
+            String familyName = familyColumnMap.get(objectKeyValue.getKey()).getFamilyName();
+            String columnName = objectKeyValue.getKey();
+            put.addColumn(familyName.getBytes(), columnName.getBytes(), convertToByte(objectKeyValue.getValue()));
         }
         return put;
     }

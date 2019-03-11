@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import javax.annotation.Resource;
 
+import com.app.model.hbase.OrderRecord;
 import com.app.repository.hbase.OrderRecordRepository;
 import com.app.repository.mongodb.MongoAccountRepository;
 import org.slf4j.Logger;
@@ -68,6 +69,21 @@ public class ConnectionController {
     @ApiOperation(value = "hbase保存")
     @GetMapping(value = "/hbase/save")
     public void hbaseSave(){
+        OrderRecord orderRecord = new OrderRecord();
+        orderRecord.setOrderId(UUID.randomUUID().toString());
+        orderRecord.setOrderDate((new Date()).getTime());
+
+        orderRecord.setProductId(UUID.randomUUID().toString());
+        orderRecord.setProductName("product-name");
+        orderRecord.setProductPrice(10.20);
+        orderRecord.setProductType("phone");
+
+        orderRecord.setPaymentId(UUID.randomUUID().toString());
+        orderRecord.setPaymentAmount(10.20);
+        orderRecord.setPaymentDiscount(1.20);
+        orderRecord.setPaymentType("alipay");
+
+        orderRecordRepository.save(orderRecord);
 
     }
 

@@ -56,10 +56,6 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
 
     private ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
     
-    private Supplier<RepositoryBeanNameGenerator> beanNameGenerator =
-                                                                    () -> new RepositoryBeanNameGenerator(this.getClass()
-                                                                                                              .getClassLoader());
-    
     private static final BiFunction<AnnotatedElement, Class<? extends Annotation>, Boolean> IS_ANNOTATED =
                                                                                             AnnotatedElement::isAnnotationPresent;
     
@@ -108,7 +104,6 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                                                         BeanDefinitionBuilder.rootBeanDefinition(HbaseRepositoryFactoryBean.class);
             beanDefinitionBuilder.addConstructorArgValue(info);
             AbstractBeanDefinition beanDefinition = beanDefinitionBuilder.getBeanDefinition();
-//            String beanName = beanNameGenerator.get().generateBeanName(beanDefinition);
             String beanName = info.getRepositoryClass().getSimpleName();
             beanName = beanName.replaceFirst(beanName.charAt(0) + "", (beanName.charAt(0) + "").toLowerCase());
             registry.registerBeanDefinition(beanName, beanDefinition);
@@ -214,58 +209,53 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     
     private <T, R, RK> HbaseRepositoryInfo<T, R, RK> resolveRepositoryClass(Class<R> clazz) {
         Optional.ofNullable(clazz).orElseThrow(() -> new ParseException(""));
-        if (!IS_ANNOTATED.apply(clazz, com.hbase.annotation.HbaseRepository.class) ) {
+        if (!IS_ANNOTATED.apply(clazz, com.hbase.annotation.HbaseRepository.class)) {
             return null;
         }
         HbaseRepositoryInfo<T, R, RK> hbaseRepositoryInfo = new HbaseRepositoryInfo<>();
-        for (Type repositoryType : clazz.getGenericInterfaces()) {
-            if (repositoryType instanceof ParameterizedType
-                && HbaseRepository.class == ((ParameterizedTypeImpl) repositoryType).getRawType()) {
-
-                Type[] types = ((ParameterizedTypeImpl) repositoryType).getActualTypeArguments();
-
-                for (int i = 0; i < types.length; i++) {
-                    Class typeClass = (Class) types[i];
-                    //如果是 model class
-                    if (TABLE_CONTAINNER.containsKey(typeClass)) {
-                        HbaseEntity hbaseEntity = TABLE_CONTAINNER.get(typeClass);
-                        hbaseRepositoryInfo.setHbaseEntity(hbaseEntity);
-
-                        final Class finalRKClass = (Class) types[i == 0 ? 1 : 0];
-                        RowkeyGenerator<T, RK> rowkeyGenerator = new RowkeyGenerator<T, RK>() {
-                            @Override
-                            public RK getRowkey(T entity) {
-                                Map<String, Object> entityMap = JSON.parseObject(JSON.toJSONString(entity), Map.class);
-                                //字段为空的需要 去除掉
-                                for (Map.Entry<String, Object> entry : entityMap.entrySet()){
-                                    if (entry.getValue() == null){
-                                        entityMap.remove(entry);
-                                    }
-                                }
-                                if (finalRKClass == Long.class){
-                                    Long rowkey = 0l;
-                                    // 生成 rowkey
-                                    Set<Map.Entry<String, Class>> entrySet = hbaseEntity.getRowkeyColumnMap().entrySet();
-                                    for (Map.Entry<String, Class> entry : entrySet) {
-                                        rowkey = rowkey + entityMap.get(entry.getKey()).hashCode();
-                                    }
-                                    return (RK) rowkey;
-                                }
-                                StringBuilder rowkey = new StringBuilder("");
-                                Set<Map.Entry<String, Class>> entrySet = hbaseEntity.getRowkeyColumnMap().entrySet();
-                                for (Map.Entry<String, Class> entry : entrySet) {
-                                    rowkey.append(entityMap.get(entry.getKey()).toString());
-                                }
-                                return (RK) rowkey;
+        Type repositoryType = clazz.getGenericInterfaces()[1];
+        if (!(repositoryType instanceof ParameterizedType
+             && HbaseRepository.class == ((ParameterizedTypeImpl) repositoryType).getRawType())) {
+            return null;
+        }
+        Type[] types = ((ParameterizedTypeImpl) repositoryType).getActualTypeArguments();
+        for (int i = 0; i < types.length; i++) {
+            Class typeClass = (Class) types[i];
+            // 如果是 model class
+            if (TABLE_CONTAINNER.containsKey(typeClass)) {
+                HbaseEntity hbaseEntity = TABLE_CONTAINNER.get(typeClass);
+                hbaseRepositoryInfo.setHbaseEntity(hbaseEntity);
+                
+                final Class finalRKClass = (Class) types[i == 0 ? 1 : 0];
+                RowkeyGenerator<T, RK> rowkeyGenerator = new RowkeyGenerator<T, RK>() {
+                    @Override
+                    public RK getRowkey(T entity) {
+                        Map<String, Object> entityMap = JSON.parseObject(JSON.toJSONString(entity), Map.class);
+                        // 字段为空的需要 去除掉
+                        for (Map.Entry<String, Object> entry : entityMap.entrySet()) {
+                            if (entry.getValue() == null) {
+                                entityMap.remove(entry.getKey());
                             }
-                        };
-                        ((MappingHbaseEntity<T,RK>) hbaseEntity).setRowkeyGenerator(rowkeyGenerator);
-                        TABLE_CONTAINNER.put(typeClass, hbaseEntity);
+                        }
+                        if (finalRKClass == Long.class) {
+                            Long rowkey = 0l;
+                            // 生成 rowkey
+                            Set<Map.Entry<String, Class>> entrySet = hbaseEntity.getRowkeyColumnMap().entrySet();
+                            for (Map.Entry<String, Class> entry : entrySet) {
+                                rowkey = rowkey + entityMap.get(entry.getKey()).hashCode();
+                            }
+                            return (RK) rowkey;
+                        }
+                        StringBuilder rowkey = new StringBuilder("");
+                        Set<Map.Entry<String, Class>> entrySet = hbaseEntity.getRowkeyColumnMap().entrySet();
+                        for (Map.Entry<String, Class> entry : entrySet) {
+                            rowkey.append(entityMap.get(entry.getKey()).toString());
+                        }
+                        return (RK) rowkey;
                     }
-                }
-            }
-            else {
-                return null;
+                };
+                ((MappingHbaseEntity<T, RK>) hbaseEntity).setRowkeyGenerator(rowkeyGenerator);
+                TABLE_CONTAINNER.put(typeClass, hbaseEntity);
             }
         }
         hbaseRepositoryInfo.setRepositoryClass(clazz);
