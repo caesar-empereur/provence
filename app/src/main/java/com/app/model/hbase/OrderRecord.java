@@ -9,7 +9,7 @@ import lombok.Data;
 /**
  * Created by yang on 2019/3/10.
  */
-@HbaseTable(name = "account")
+@HbaseTable(name = "order-record")
 @CompoundColumFamily(columnFamily = { @ColumnFamily(name = "product", columnList = { "productId", "productName", "productPrice", "productType" }, unique = true),
                                       @ColumnFamily(name = "payment", columnList = { "paymentId", "paymentAmount", "paymentDiscount", "paymentType" }, unique = true) }, constraint = true)
 @RowKey(columnList = { "orderId", "orderDate" })

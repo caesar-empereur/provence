@@ -108,8 +108,9 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                                                         BeanDefinitionBuilder.rootBeanDefinition(HbaseRepositoryFactoryBean.class);
             beanDefinitionBuilder.addConstructorArgValue(info);
             AbstractBeanDefinition beanDefinition = beanDefinitionBuilder.getBeanDefinition();
-            String beanName = beanNameGenerator.get().generateBeanName(beanDefinition);
-
+//            String beanName = beanNameGenerator.get().generateBeanName(beanDefinition);
+            String beanName = info.getRepositoryClass().getSimpleName();
+            beanName = beanName.replaceFirst(beanName.charAt(0) + "", (beanName.charAt(0) + "").toLowerCase());
             registry.registerBeanDefinition(beanName, beanDefinition);
         }
     }
