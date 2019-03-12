@@ -13,8 +13,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.*;
 
 import com.hbase.pool.ConnectionProvider;
 import com.hbase.pool.hibernate.ConnectionPoolManager;
@@ -37,14 +36,14 @@ public class TableManager {
     
     private Admin admin = null;
 
-    public Boolean initTable(HbaseEntity htable, InitFinishedCallback callback) {
+    public Boolean initTable(HbaseEntity hbaseEntity, InitFinishedCallback callback) {
         ConnectionProvider<Connection> connectionProvider = connectionProviderSupplier.get();
 
         boolean succeed;
         Connection connection = null;
         try {
             connection = connectionProvider.getConnection();
-            TableName tableName = TableName.valueOf(htable.getTableName());
+            TableName tableName = TableName.valueOf(hbaseEntity.getTableName());
             if (admin == null) {
                 admin = connection.getAdmin();
             }
@@ -53,27 +52,20 @@ public class TableManager {
             }
             if (tableNames.contains(tableName)) {
                 succeed = true;
-            } else {
-                //只需要处理 column family, column 在 Put 的时候指定
-                HTableDescriptor tableDescriptor = new HTableDescriptor(tableName);
-                //2.1 版本
-//                Map<String, Set<String>> columnWithFamily = htable.getColumnsWithFamily();
-//                if (columnWithFamily != null && columnWithFamily.size() >= 0
-//                    && tableDescriptor instanceof TableDescriptorBuilder.ModifyableTableDescriptor) {
-//                    for (Map.Entry<String, Set<String>> entry : columnWithFamily.entrySet()) {
-//                        ColumnFamilyDescriptor columnFamilyDescriptor =
-//                                                                      ColumnFamilyDescriptorBuilder.of(entry.getKey());
-//                        ((TableDescriptorBuilder.ModifyableTableDescriptor) tableDescriptor).setColumnFamily(columnFamilyDescriptor);
-//                    }
-//                }
-                //1.2版本
-                List<FamilyColumn> familyColumnList = htable.getFamilyColumnList();
+            }
+            else {
+                // 只需要处理 column family, column 在 Put 的时候指定
+                List<FamilyColumn> familyColumnList = hbaseEntity.getFamilyColumnList();
                 Set<String> familyList = familyColumnList.stream()
                                                          .map(FamilyColumn::getFamilyName)
                                                          .collect(Collectors.toSet());
-                for (String family : familyList){
-                    HColumnDescriptor hColumnDescriptor = new HColumnDescriptor(family);
-                    tableDescriptor.addFamily(hColumnDescriptor);
+                TableDescriptorBuilder.ModifyableTableDescriptor tableDescriptor =
+                                                                                 (TableDescriptorBuilder.ModifyableTableDescriptor) TableDescriptorBuilder.newBuilder(tableName)
+                                                                                                                                                          .build();
+                for (String family : familyList) {
+                    ColumnFamilyDescriptor columnFamilyDescriptor =
+                                                                  ColumnFamilyDescriptorBuilder.of(family);
+                    tableDescriptor.setColumnFamily(columnFamilyDescriptor);
                 }
                 admin.createTable(tableDescriptor);
                 succeed = true;

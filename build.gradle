@@ -65,11 +65,11 @@ allprojects {
 //        all*.exclude group: 'com.google.guava', module: 'guava'
 //    }
 
-    configurations.all {
-        resolutionStrategy {
-            force 'com.google.guava:guava:15.0'
-        }
-    }
+//    configurations.all {
+//        resolutionStrategy {
+//            force 'com.google.guava:guava:15.0'
+//        }
+//    }
 
     dependencies {
         compile "org.projectlombok:lombok:1.18.2"

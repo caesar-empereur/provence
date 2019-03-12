@@ -213,7 +213,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
             return null;
         }
         HbaseRepositoryInfo<T, R, RK> hbaseRepositoryInfo = new HbaseRepositoryInfo<>();
-        Type repositoryType = clazz.getGenericInterfaces()[1];
+        Type repositoryType = clazz.getGenericInterfaces()[0];
         if (!(repositoryType instanceof ParameterizedType
              && HbaseRepository.class == ((ParameterizedTypeImpl) repositoryType).getRawType())) {
             return null;
