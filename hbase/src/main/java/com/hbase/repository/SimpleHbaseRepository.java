@@ -55,13 +55,16 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
         Put put = new Put(convertToByte(hbaseEntity.getRowkey(entity)));
         Map<String, Object> entityMap = JSON.parseObject(JSON.toJSONString(entity), Map.class);
         for (Map.Entry<String, Object> objectKeyValue : entityMap.entrySet()){
-            if (objectKeyValue.getValue() == null || hbaseEntity.getRowkeyColumnMap().get(objectKeyValue.getKey()) != null){
+            if (objectKeyValue.getValue() == null
+                || hbaseEntity.getRowkeyColumnMap().get(objectKeyValue.getKey()) != null) {
                 entityMap.remove(objectKeyValue.getKey());
                 continue;
             }
             String familyName = familyColumnMap.get(objectKeyValue.getKey()).getFamilyName();
             String columnName = objectKeyValue.getKey();
-            put.addColumn(familyName.getBytes(), columnName.getBytes(), convertToByte(objectKeyValue.getValue()));
+            put.addColumn(familyName.getBytes(),
+                          columnName.getBytes(),
+                          convertToByte(objectKeyValue.getValue()));
         }
         return put;
     }
@@ -100,7 +103,7 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
 
     @Override
     public Collection<T> scan(RK start, RK end) {
-        Scan scan = new Scan(convertToByte(start), convertToByte(end));
+        Scan scan = new Scan().withStartRow(convertToByte(start)).withStopRow(convertToByte(end));
         Table table = getConnectionTable();
         ResultScanner resultScanner;
         try {
