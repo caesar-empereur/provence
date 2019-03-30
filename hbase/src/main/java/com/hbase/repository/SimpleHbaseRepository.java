@@ -235,6 +235,7 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
             //关闭table出现异常，连接也要关闭
             try {
                 CURRENT_CONNECTION.get().close();
+                CURRENT_CONNECTION.remove();
             }
             catch (IOException e) {
                 e.printStackTrace();

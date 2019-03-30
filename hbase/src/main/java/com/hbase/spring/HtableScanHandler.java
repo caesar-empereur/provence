@@ -11,6 +11,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.hbase.reflection.ModelElement;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -53,8 +54,6 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
 
     private static final String CLASS_RESOURCE_PATTERN = "/**/*.class";
     
-    private static final Function<Class, Set<Field>> FIELD_RESOLVER = ReflectManeger::getAllField;
-
     private ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
     
     private static final BiFunction<AnnotatedElement, Class<? extends Annotation>, Boolean> IS_ANNOTATED =
@@ -148,20 +147,17 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     
     private <T, RK> HbaseEntity<T, RK> resolveModelClass(Class<T> clazz) {
         Optional.ofNullable(clazz).orElseThrow(() -> new ParseException(""));
-        if (!IS_ANNOTATED.apply(clazz, HbaseTable.class) || !IS_ANNOTATED.apply(clazz, RowKey.class)
-            || !IS_ANNOTATED.apply(clazz, CompoundColumFamily.class)) {
+        if (!IS_ANNOTATED.apply(clazz, HbaseTable.class) || !IS_ANNOTATED.apply(clazz, RowKey.class)) {
             return null;
         }
         if (clazz.isEnum() || clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())) {
             return null;
         }
-        Set<Field> allFieldSet = FIELD_RESOLVER.apply(clazz);
-        Map<String, Class> allFieldMap = new HashMap<>();
-        Set<String> allFieldStringSet = allFieldSet.stream().map(field -> {
-            allFieldMap.put(field.getName(), field.getType());
-            return field.getName();
-        }).collect(Collectors.toSet());
-        
+        Set<ModelElement> modelElements = ReflectManeger.getAllMethodField(clazz);
+        Set<String> allFieldStringSet = modelElements.stream()
+                                                     .map(element -> element.getField().getName())
+                                                     .collect(Collectors.toSet());
+
         HbaseTable hbaseTable = clazz.getAnnotation(HbaseTable.class);
         String tableName = hbaseTable.name();
         RowKey rowKey = clazz.getAnnotation(RowKey.class);
@@ -176,11 +172,11 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
             if (!allFieldStringSet.contains(rowkeyColumn)) {
                 throw new ConfigurationException("找不到配置的 rowkey: " + rowkeyColumn);
             }
-            for (Field field : allFieldSet) {
-                if (field.getName().equals(rowkeyColumn)) {
-                    Class fieldClass = field.getType();
+            for (ModelElement element : modelElements) {
+                if (element.getField().getName().equals(rowkeyColumn)) {
+                    Class fieldClass = element.getField().getType();
                     if (fieldClass == String.class || fieldClass == Long.class) {
-                        rowkeyColumnMap.put(rowkeyColumn, field.getClass());
+                        rowkeyColumnMap.put(rowkeyColumn, element.getField().getClass());
                     }
                     else {
                         throw new ConfigurationException("rowkey 字段不支持该类型: " + fieldClass);
@@ -190,20 +186,14 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
         }
         //获取所有配置的字段的名称，类型，family
         List<FamilyColumn> familyColumnList = new ArrayList<>();
-        CompoundColumFamily compoundColumFamily = clazz.getAnnotation(CompoundColumFamily.class);
-        List<String> columnListConfiged = new ArrayList<>();
-        for (ColumnFamily columnFamily : compoundColumFamily.columnFamily()){
-            for (String column : columnFamily.columnList()){
+        for (ModelElement element : modelElements){
+            if (IS_ANNOTATED.apply(element.getReadMethod(), ColumnFamily.class)){
                 FamilyColumn familyColumn = new FamilyColumn();
-                familyColumn.setColumnName(column);
-                familyColumn.setFamilyName(columnFamily.name());
-                familyColumn.setColumnType(Optional.of(allFieldMap.get(column)).get());
+                familyColumn.setColumnName(element.getField().getName());
+                familyColumn.setColumnType(element.getField().getType());
+                familyColumn.setFamilyName(element.getReadMethod().getAnnotation(ColumnFamily.class).name());
                 familyColumnList.add(familyColumn);
-                columnListConfiged.add(column);
             }
-        }
-        if (columnListConfiged.size() != new HashSet<>(columnListConfiged).size()) {
-            throw new ConfigurationException("不同 ColumnFamily 不能包含相同 column");
         }
 
         return new MappingHbaseEntity<>(clazz, tableName, rowkeyColumnMap, familyColumnList);
@@ -241,7 +231,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                             }
                         }
                         if (finalRKClass == Long.class) {
-                            Long rowkey = 0l;
+                            Long rowkey = 0L;
                             // 生成 rowkey
                             Set<Map.Entry<String, Class>> entrySet = hbaseEntity.getRowkeyColumnMap().entrySet();
                             for (Map.Entry<String, Class> entry : entrySet) {

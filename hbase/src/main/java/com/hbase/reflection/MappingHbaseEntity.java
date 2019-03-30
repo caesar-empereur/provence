@@ -36,6 +36,7 @@ public class MappingHbaseEntity<T, RK> implements HbaseEntity<T, RK> {
         this.familyColumnList = Optional.of(familyColumnList).get();
     }
 
+    @Override
     public List<FamilyColumn> getFamilyColumnList() {
         return familyColumnList;
     }
@@ -56,6 +57,7 @@ public class MappingHbaseEntity<T, RK> implements HbaseEntity<T, RK> {
         return this.rowkeyGenerator.getRowkey(entity);
     }
 
+    @Override
     public Map<String, Class> getRowkeyColumnMap() {
         return this.rowkeyColumnMap;
     }

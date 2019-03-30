@@ -10,8 +10,6 @@ import lombok.Data;
 @Data
 public class OrderPojo {
 
-    private Long orderDate;
-
 
     private String productId;
 

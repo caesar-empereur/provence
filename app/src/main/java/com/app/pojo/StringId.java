@@ -9,7 +9,7 @@ import lombok.Data;
  * Created by yingyang on 15/11/19.
  */
 @Data
-public abstract class StringId implements Serializable {
+public class StringId implements Serializable {
 
     private String id;
 
