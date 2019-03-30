@@ -9,13 +9,13 @@ import lombok.Data;
 @Data
 public class ConnectionConfig {
 
-    private Integer initSize;
+    private Integer initSize = 30;
 
-    private Integer minSize;
+    private Integer minSize = 30;
 
-    private Integer maxSize;
+    private Integer maxSize = 50;
 
-    private Integer validateInterval;
+    private Integer validateInterval = 30;
 
     private String quorum;
 

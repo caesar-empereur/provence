@@ -1,5 +1,6 @@
 package com.app.model.hbase;
 
+import com.app.pojo.OrderPojo;
 import com.hbase.annotation.ColumnFamily;
 import com.hbase.annotation.CompoundColumFamily;
 import com.hbase.annotation.HbaseTable;
@@ -14,27 +15,10 @@ import lombok.Data;
                                       @ColumnFamily(name = "payment", columnList = { "paymentId", "paymentAmount", "paymentDiscount", "paymentType" }, unique = true) }, constraint = true)
 @RowKey(columnList = { "orderId", "orderDate" })
 @Data
-public class OrderRecord {
+public class OrderRecord extends OrderPojo{
 
     private String orderId;
 
     private Long orderDate;
 
-
-    private String productId;
-
-    private String productName;
-
-    private Double productPrice;
-
-    private String productType;
-
-
-    private String paymentId;
-
-    private Double paymentAmount;
-
-    private Double paymentDiscount;
-
-    private String paymentType;
 }

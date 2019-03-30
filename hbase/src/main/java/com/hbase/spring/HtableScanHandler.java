@@ -1,19 +1,16 @@
-package com.hbase.core;
+package com.hbase.spring;
 
-import com.alibaba.fastjson.JSON;
-import com.hbase.annotation.*;
-import com.hbase.edm.EventMessage;
-import com.hbase.edm.ModePrepareListener;
-import com.hbase.edm.ModelPrepareEvent;
-import com.hbase.exception.ConfigurationException;
-import com.hbase.exception.ParseException;
-import com.hbase.reflection.HbaseEntity;
-import com.hbase.reflection.MappingHbaseEntity;
-import com.hbase.reflection.ReflectManeger;
-import com.hbase.repository.HbaseRepository;
-import com.hbase.repository.HbaseRepositoryFactoryBean;
-import com.hbase.repository.HbaseRepositoryInfo;
-import com.hbase.repository.RowkeyGenerator;
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.*;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -29,21 +26,25 @@ import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
-import org.springframework.data.repository.config.RepositoryBeanNameGenerator;
 import org.springframework.util.ClassUtils;
-import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
-import java.io.IOException;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.*;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import com.alibaba.fastjson.JSON;
+import com.hbase.annotation.*;
+import com.hbase.core.FamilyColumn;
+import com.hbase.edm.EventMessage;
+import com.hbase.edm.ModePrepareListener;
+import com.hbase.edm.ModelPrepareEvent;
+import com.hbase.exception.ConfigurationException;
+import com.hbase.exception.ParseException;
+import com.hbase.reflection.HbaseEntity;
+import com.hbase.reflection.MappingHbaseEntity;
+import com.hbase.reflection.ReflectManeger;
+import com.hbase.repository.HbaseRepository;
+import com.hbase.repository.HbaseRepositoryFactoryBean;
+import com.hbase.repository.HbaseRepositoryInfo;
+import com.hbase.repository.RowkeyGenerator;
+
+import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 /**
  * Created by leon on 2017/4/11.
@@ -70,7 +71,9 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
                                         BeanDefinitionRegistry registry) {
-        registerBean(importingClassMetadata, registry);
+        if (CustomEnvironmentListener.ENABLED){
+            registerBean(importingClassMetadata, registry);
+        }
     }
 
     private <T> void registerBean(AnnotationMetadata importingClassMetadata,

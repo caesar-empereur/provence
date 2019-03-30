@@ -2,11 +2,9 @@ package com.hbase.annotation;
 
 import java.lang.annotation.*;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 
-import com.hbase.core.HtableScanHandler;
+import com.hbase.spring.HtableScanHandler;
 
 /**
  * Created by leon on 2018/4/11.
