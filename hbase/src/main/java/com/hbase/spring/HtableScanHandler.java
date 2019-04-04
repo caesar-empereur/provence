@@ -3,6 +3,7 @@ package com.hbase.spring;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
+import java.lang.reflect.AnnotatedElement;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -11,7 +12,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.hbase.reflection.ModelElement;
+import com.hbase.reflection.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -37,9 +38,6 @@ import com.hbase.edm.ModePrepareListener;
 import com.hbase.edm.ModelPrepareEvent;
 import com.hbase.exception.ConfigurationException;
 import com.hbase.exception.ParseException;
-import com.hbase.reflection.HbaseEntity;
-import com.hbase.reflection.MappingHbaseEntity;
-import com.hbase.reflection.ReflectManeger;
 import com.hbase.repository.HbaseRepository;
 import com.hbase.repository.HbaseRepositoryFactoryBean;
 import com.hbase.repository.HbaseRepositoryInfo;
@@ -154,49 +152,83 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
             return null;
         }
         Set<ModelElement> modelElements = ReflectManeger.getAllMethodField(clazz);
-        Set<String> allFieldStringSet = modelElements.stream()
-                                                     .map(element -> element.getField().getName())
-                                                     .collect(Collectors.toSet());
+//        Set<String> allFieldStringSet = modelElements.stream()
+//                                                     .map(element -> element.getField().getName())
+//                                                     .collect(Collectors.toSet());
 
         HbaseTable hbaseTable = clazz.getAnnotation(HbaseTable.class);
         String tableName = hbaseTable.name();
-        RowKey rowKey = clazz.getAnnotation(RowKey.class);
-        Set<String> configuredRowkeyColumnSet = new HashSet<>(Arrays.asList(rowKey.columnList()));
-        
+
         Map<String, Class> rowkeyColumnMap = new HashMap<>();
 
         /* 校验配置的 rowkey 是否是真实存在的字段
         * 获取配置的 rowkey 的字段的类型
         * */
-        for (String rowkeyColumn : configuredRowkeyColumnSet) {
-            if (!allFieldStringSet.contains(rowkeyColumn)) {
-                throw new ConfigurationException("找不到配置的 rowkey: " + rowkeyColumn);
-            }
-            for (ModelElement element : modelElements) {
-                if (element.getField().getName().equals(rowkeyColumn)) {
-                    Class fieldClass = element.getField().getType();
-                    if (fieldClass == String.class || fieldClass == Long.class) {
-                        rowkeyColumnMap.put(rowkeyColumn, element.getField().getClass());
-                    }
-                    else {
-                        throw new ConfigurationException("rowkey 字段不支持该类型: " + fieldClass);
-                    }
-                }
-            }
-        }
+//        for (String rowkeyColumn : configuredRowkeyColumnSet) {
+//            if (!allFieldStringSet.contains(rowkeyColumn)) {
+//                throw new ConfigurationException("找不到配置的 rowkey: " + rowkeyColumn);
+//            }
+//            for (ModelElement element : modelElements) {
+//                if (element.getField().getName().equals(rowkeyColumn)) {
+//                    Class fieldClass = element.getField().getType();
+//                    if (fieldClass == String.class || fieldClass == Long.class) {
+//                        rowkeyColumnMap.put(rowkeyColumn, element.getField().getClass());
+//                    }
+//                    else {
+//                        throw new ConfigurationException("rowkey 字段不支持该类型: " + fieldClass);
+//                    }
+//                }
+//            }
+//        }
         //获取所有配置的字段的名称，类型，family
         List<FamilyColumn> familyColumnList = new ArrayList<>();
-        for (ModelElement element : modelElements){
-            if (IS_ANNOTATED.apply(element.getReadMethod(), ColumnFamily.class)){
-                FamilyColumn familyColumn = new FamilyColumn();
-                familyColumn.setColumnName(element.getField().getName());
-                familyColumn.setColumnType(element.getField().getType());
-                familyColumn.setFamilyName(element.getReadMethod().getAnnotation(ColumnFamily.class).name());
+        List<RowkeyInfo> rowkeyInfoList = new ArrayList<>();
+        for (ModelElement element : modelElements) {
+            FamilyColumn familyColumn = new FamilyColumn();
+            familyColumn.setColumnName(element.getField().getName());
+            familyColumn.setColumnType(element.getField().getType());
+            
+            // 收集 falily 信息
+            if (IS_ANNOTATED.apply(element.getReadMethod(), ColumnFamily.class)
+                && IS_ANNOTATED.apply(element.getField(), ColumnFamily.class)) {
+                throw new ConfigurationException("重复配置 family 信息");
+            }
+            else if (IS_ANNOTATED.apply(element.getReadMethod(), ColumnFamily.class)
+                     && !IS_ANNOTATED.apply(element.getField(), ColumnFamily.class)) {
+                familyColumn.setFamilyName(element.getReadMethod()
+                                                  .getAnnotation(ColumnFamily.class)
+                                                  .name());
                 familyColumnList.add(familyColumn);
+            }
+            else if (!IS_ANNOTATED.apply(element.getReadMethod(), ColumnFamily.class)
+                     && IS_ANNOTATED.apply(element.getField(), ColumnFamily.class)) {
+                familyColumn.setFamilyName(element.getField()
+                                                  .getAnnotation(ColumnFamily.class)
+                                                  .name());
+                familyColumnList.add(familyColumn);
+            }
+
+            //收集 rowkey 信息
+            RowkeyInfo rowkeyInfo = new RowkeyInfo();
+            if (IS_ANNOTATED.apply(element.getReadMethod(), RowKey.class)
+                && IS_ANNOTATED.apply(element.getField(), RowKey.class)) {
+                throw new ConfigurationException("重复配置 RowKey 信息");
+            }
+            else if (IS_ANNOTATED.apply(element.getReadMethod(), RowKey.class)
+                     && !IS_ANNOTATED.apply(element.getField(), RowKey.class)) {
+                rowkeyInfo.setField(element.getField());
+                rowkeyInfo.setOrder(element.getReadMethod().getAnnotation(RowKey.class).order());
+                rowkeyInfoList.add(rowkeyInfo);
+            }
+            else if (!IS_ANNOTATED.apply(element.getReadMethod(), RowKey.class)
+                     && IS_ANNOTATED.apply(element.getField(), RowKey.class)) {
+                rowkeyInfo.setField(element.getField());
+                rowkeyInfo.setOrder(element.getField().getAnnotation(RowKey.class).order());
+                rowkeyInfoList.add(rowkeyInfo);
             }
         }
 
-        return new MappingHbaseEntity<>(clazz, tableName, rowkeyColumnMap, familyColumnList);
+        return new MappingHbaseEntity<>(clazz, tableName, rowkeyInfoList, familyColumnList);
     }
 
     
@@ -233,9 +265,8 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                         if (finalRKClass == Long.class) {
                             Long rowkey = 0L;
                             // 生成 rowkey
-                            Set<Map.Entry<String, Class>> entrySet = hbaseEntity.getRowkeyColumnMap().entrySet();
-                            for (Map.Entry<String, Class> entry : entrySet) {
-                                rowkey = rowkey + entityMap.get(entry.getKey()).hashCode();
+                            for (Object rowkeyInfo : hbaseEntity.getRowkeyInfoList()) {
+                                rowkey = rowkey + entityMap.get(rowkeyInfo.getField().getName()).hashCode();
                             }
                             return (RK) rowkey;
                         }

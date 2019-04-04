@@ -11,50 +11,58 @@ import lombok.Data;
  * Created by yang on 2019/3/10.
  */
 @HbaseTable(name = "order-record")
-@RowKey(columnList = { "orderId", "orderDate" })
 @Data
 public class OrderRecord extends OrderPojo {
-    
+
+    @RowKey(order = 1)
     private String orderId;
-    
+
+    @RowKey(order = 2)
     private Long orderDate;
 
-    @ColumnFamily(name = "")
+    @ColumnFamily(name = "product")
     @Override
     public String getProductId() {
         return super.getProductId();
     }
-    
+
+    @ColumnFamily(name = "product")
     @Override
     public String getProductName() {
         return super.getProductName();
     }
-    
+
+    @ColumnFamily(name = "product")
     @Override
     public Double getProductPrice() {
         return super.getProductPrice();
     }
-    
+
+    @ColumnFamily(name = "product")
     @Override
     public String getProductType() {
         return super.getProductType();
     }
-    
+
+    @ColumnFamily(name = "payment")
     @Override
     public String getPaymentId() {
         return super.getPaymentId();
     }
-    
+
+    @ColumnFamily(name = "payment")
     @Override
     public Double getPaymentAmount() {
         return super.getPaymentAmount();
     }
-    
+
+    @ColumnFamily(name = "payment")
     @Override
     public Double getPaymentDiscount() {
         return super.getPaymentDiscount();
     }
-    
+
+    @ColumnFamily(name = "payment")
     @Override
     public String getPaymentType() {
         return super.getPaymentType();

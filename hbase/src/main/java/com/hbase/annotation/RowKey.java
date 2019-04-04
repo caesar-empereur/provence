@@ -1,5 +1,7 @@
 package com.hbase.annotation;
 
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Documented;
@@ -10,7 +12,7 @@ import java.lang.annotation.Target;
 /**
  * Created by leon on 2018/4/11.
  */
-@Target(ElementType.TYPE)
+@Target({METHOD, FIELD})
 @Retention(RUNTIME)
 @Documented
 public @interface RowKey {
@@ -20,5 +22,5 @@ public @interface RowKey {
      * @return
      */
 
-    String[] columnList();
+    int order() default 1;
 }

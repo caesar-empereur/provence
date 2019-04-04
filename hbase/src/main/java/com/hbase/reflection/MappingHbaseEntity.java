@@ -22,17 +22,17 @@ public class MappingHbaseEntity<T, RK> implements HbaseEntity<T, RK> {
 
     private List<FamilyColumn> familyColumnList;
 
-    private Map<String, Class> rowkeyColumnMap;
+    private List<RowkeyInfo> rowkeyInfoList;
 
     private RowkeyGenerator<T, RK> rowkeyGenerator;
 
     public MappingHbaseEntity(Class<T> modelClass,
                               String tableName,
-                              Map<String, Class> rowkeyColumnMap,
+                              List<RowkeyInfo> rowkeyInfoList,
                               List<FamilyColumn> familyColumnList) {
         this.modelClass = Optional.of(modelClass).get();
         this.tableName = Optional.of(tableName).get();
-        this.rowkeyColumnMap = Optional.of(rowkeyColumnMap).get();
+        this.rowkeyInfoList = Optional.of(rowkeyInfoList).get();
         this.familyColumnList = Optional.of(familyColumnList).get();
     }
 
@@ -58,8 +58,8 @@ public class MappingHbaseEntity<T, RK> implements HbaseEntity<T, RK> {
     }
 
     @Override
-    public Map<String, Class> getRowkeyColumnMap() {
-        return this.rowkeyColumnMap;
+    public List<RowkeyInfo> getRowkeyInfoList() {
+        return this.rowkeyInfoList;
     }
 
     @Override
