@@ -2,17 +2,17 @@ package com.hbase.spring;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.*;
 import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.hbase.reflection.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -31,13 +31,17 @@ import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.util.ClassUtils;
 
 import com.alibaba.fastjson.JSON;
-import com.hbase.annotation.*;
+import com.hbase.annotation.ColumnFamily;
+import com.hbase.annotation.HbaseTable;
+import com.hbase.annotation.HbaseTableScan;
+import com.hbase.annotation.RowKey;
 import com.hbase.core.FamilyColumn;
 import com.hbase.edm.EventMessage;
 import com.hbase.edm.ModePrepareListener;
 import com.hbase.edm.ModelPrepareEvent;
 import com.hbase.exception.ConfigurationException;
 import com.hbase.exception.ParseException;
+import com.hbase.reflection.*;
 import com.hbase.repository.HbaseRepository;
 import com.hbase.repository.HbaseRepositoryFactoryBean;
 import com.hbase.repository.HbaseRepositoryInfo;
@@ -262,18 +266,24 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                                 entityMap.remove(entry.getKey());
                             }
                         }
+                        Collections.sort(hbaseEntity.getRowkeyInfoList());
                         if (finalRKClass == Long.class) {
                             Long rowkey = 0L;
                             // 生成 rowkey
                             for (Object rowkeyInfo : hbaseEntity.getRowkeyInfoList()) {
-                                rowkey = rowkey + entityMap.get(rowkeyInfo.getField().getName()).hashCode();
+                                rowkey = rowkey
+                                         + entityMap.get(((RowkeyInfo) rowkeyInfo).getField().getName()).hashCode();
                             }
                             return (RK) rowkey;
                         }
                         StringBuilder rowkey = new StringBuilder("");
-                        Set<Map.Entry<String, Class>> entrySet = hbaseEntity.getRowkeyColumnMap().entrySet();
-                        for (Map.Entry<String, Class> entry : entrySet) {
-                            rowkey.append(entityMap.get(entry.getKey()).toString());
+                        int i=0;
+                        for (Object rowkeyInfo: hbaseEntity.getRowkeyInfoList()) {
+                            if (i > 0 && i < hbaseEntity.getRowkeyInfoList().size()) {
+                                rowkey.append("-");
+                            }
+                            rowkey.append(((RowkeyInfo) rowkeyInfo).getField().getName());
+                            i++;
                         }
                         return (RK) rowkey;
                     }

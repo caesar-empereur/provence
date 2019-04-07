@@ -36,7 +36,7 @@ public class CustomEnvironmentListener implements EnvironmentPostProcessor {
         }
         if (!environment.containsProperty(ENABLE_KEY)
             || StringUtils.isBlank(environment.getProperty(ENABLE_KEY))) {
-            throw new ConfigurationException("没有配置 hbase 地址");
+            throw new ConfigurationException("没有配置 hbase 开关");
         }
         ENABLED = environment.getProperty(ENABLE_KEY, Boolean.class);
         connectionConfig = new ConnectionConfig();
