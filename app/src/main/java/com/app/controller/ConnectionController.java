@@ -47,7 +47,7 @@ public class ConnectionController {
     @Resource
     private MongoAccountRepository mongoAccountRepository;
 
-    @Resource
+//    @Resource
     private OrderRecordRepository orderRecordRepository;
     
     @ApiOperation(value = "count")

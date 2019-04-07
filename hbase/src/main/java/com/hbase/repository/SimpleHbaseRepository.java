@@ -6,6 +6,7 @@ import java.io.ObjectInputStream;
 import java.math.BigDecimal;
 import java.util.*;
 
+import com.hbase.reflection.RowkeyInfo;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.TableName;
@@ -37,11 +38,16 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
 
     private Map<String, FamilyColumn> familyColumnMap;
 
+    private Map<String, RowkeyInfo> rowkeyInfoMap;
+
     public SimpleHbaseRepository(HbaseEntity<T, RK> hbaseEntity) {
         this.hbaseEntity = Optional.of(hbaseEntity).get();
-        familyColumnMap = new HashMap<>();
+        this.familyColumnMap = new HashMap<>();
         for (FamilyColumn familyColumn : hbaseEntity.getFamilyColumnList()){
-            familyColumnMap.put(familyColumn.getColumnName(), familyColumn);
+            this.familyColumnMap.put(familyColumn.getColumnName(), familyColumn);
+        }
+        for (RowkeyInfo rowkeyInfo : hbaseEntity.getRowkeyInfoList()){
+            this.rowkeyInfoMap.put(rowkeyInfo.getField().getName(), rowkeyInfo);
         }
     }
 
@@ -54,9 +60,10 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
     private Put toPut(T entity){
         Put put = new Put(convertToByte(hbaseEntity.getRowkey(entity)));
         Map<String, Object> entityMap = JSON.parseObject(JSON.toJSONString(entity), Map.class);
+        //过滤掉值为空的，和 rowkey 的字段
         for (Map.Entry<String, Object> objectKeyValue : entityMap.entrySet()){
             if (objectKeyValue.getValue() == null
-                || hbaseEntity.getRowkeyColumnMap().get(objectKeyValue.getKey()) != null) {
+                || this.rowkeyInfoMap.get(objectKeyValue.getKey()) != null) {
                 entityMap.remove(objectKeyValue.getKey());
                 continue;
             }

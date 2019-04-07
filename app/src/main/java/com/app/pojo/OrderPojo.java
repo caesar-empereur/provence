@@ -2,6 +2,8 @@ package com.app.pojo;
 
 import lombok.Data;
 
+import java.util.Date;
+
 /**
  * @Description
  * @author: yangyingyang
@@ -27,4 +29,5 @@ public class OrderPojo {
     private Double paymentDiscount;
 
     private String paymentType;
+
 }

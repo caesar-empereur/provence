@@ -15,7 +15,7 @@ import java.util.Date;
 @Data
 @Entity
 @Table(name = "orders")
-public class Order extends OrderPojo {
+public class Order {
 
     @Id
     @GeneratedValue(generator = "jpa-uuid")
@@ -24,4 +24,21 @@ public class Order extends OrderPojo {
     private String id;
 
     private Date createTime;
+
+    private String productId;
+
+    private String productName;
+
+    private Double productPrice;
+
+    private String productType;
+
+
+    private String paymentId;
+
+    private Double paymentAmount;
+
+    private Double paymentDiscount;
+
+    private String paymentType;
 }
