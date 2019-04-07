@@ -1,4 +1,4 @@
-rootProject.name = 'hbase-model'
+rootProject.name = 'provence'
 include 'app'
 include 'hbase'
 

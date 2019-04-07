@@ -1,4 +1,4 @@
-group 'hbase-model'
+group 'provence'
 version '1.0'
 
 manifest {

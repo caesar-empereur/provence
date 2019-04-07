@@ -1,4 +1,4 @@
-group 'hbase-model'
+group 'provence'
 
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
