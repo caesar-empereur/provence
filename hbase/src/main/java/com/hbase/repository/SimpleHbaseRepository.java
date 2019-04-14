@@ -43,6 +43,7 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
     public SimpleHbaseRepository(HbaseEntity<T, RK> hbaseEntity) {
         this.hbaseEntity = Optional.of(hbaseEntity).get();
         this.familyColumnMap = new HashMap<>();
+        this.rowkeyInfoMap = new HashMap<>();
         for (FamilyColumn familyColumn : hbaseEntity.getFamilyColumnList()){
             this.familyColumnMap.put(familyColumn.getColumnName(), familyColumn);
         }
@@ -61,10 +62,12 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
         Put put = new Put(convertToByte(hbaseEntity.getRowkey(entity)));
         Map<String, Object> entityMap = JSON.parseObject(JSON.toJSONString(entity), Map.class);
         //过滤掉值为空的，和 rowkey 的字段
-        for (Map.Entry<String, Object> objectKeyValue : entityMap.entrySet()){
+        Iterator<Map.Entry<String, Object>> iterator = entityMap.entrySet().iterator();
+        while (iterator.hasNext()){
+            Map.Entry<String, Object> objectKeyValue = iterator.next();
             if (objectKeyValue.getValue() == null
                 || this.rowkeyInfoMap.get(objectKeyValue.getKey()) != null) {
-                entityMap.remove(objectKeyValue.getKey());
+                iterator.remove();
                 continue;
             }
             String familyName = familyColumnMap.get(objectKeyValue.getKey()).getFamilyName();

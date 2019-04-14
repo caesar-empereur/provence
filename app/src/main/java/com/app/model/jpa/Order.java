@@ -12,33 +12,71 @@ import java.util.Date;
  * @author: yangyingyang
  * @date: 2019/3/26.
  */
-@Data
 @Entity
 @Table(name = "orders")
-public class Order {
+public class Order extends OrderPojo {
+
+    private String id;
+
+    private Date createTime;
 
     @Id
     @GeneratedValue(generator = "jpa-uuid")
     @GenericGenerator(name = "jpa-uuid", strategy = "uuid")
     @Column(length = 36)
-    private String id;
+    public String getId() {
+        return id;
+    }
 
-    private Date createTime;
+    public void setId(String id) {
+        this.id = id;
+    }
 
-    private String productId;
+    public Date getCreateTime() {
+        return createTime;
+    }
 
-    private String productName;
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime;
+    }
 
-    private Double productPrice;
+    @Override
+    public String getProductId() {
+        return super.getProductId();
+    }
 
-    private String productType;
+    @Override
+    public String getProductName() {
+        return super.getProductName();
+    }
 
+    @Override
+    public Double getProductPrice() {
+        return super.getProductPrice();
+    }
 
-    private String paymentId;
+    @Override
+    public String getProductType() {
+        return super.getProductType();
+    }
 
-    private Double paymentAmount;
+    @Override
+    public String getPaymentId() {
+        return super.getPaymentId();
+    }
 
-    private Double paymentDiscount;
+    @Override
+    public Double getPaymentAmount() {
+        return super.getPaymentAmount();
+    }
 
-    private String paymentType;
+    @Override
+    public Double getPaymentDiscount() {
+        return super.getPaymentDiscount();
+    }
+
+    @Override
+    public String getPaymentType() {
+        return super.getPaymentType();
+    }
 }

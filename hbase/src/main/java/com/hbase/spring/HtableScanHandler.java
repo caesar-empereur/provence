@@ -149,7 +149,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     
     private <T, RK> HbaseEntity<T, RK> resolveModelClass(Class<T> clazz) {
         Optional.ofNullable(clazz).orElseThrow(() -> new ParseException(""));
-        if (!IS_ANNOTATED.apply(clazz, HbaseTable.class) || !IS_ANNOTATED.apply(clazz, RowKey.class)) {
+        if (!IS_ANNOTATED.apply(clazz, HbaseTable.class)) {
             return null;
         }
         if (clazz.isEnum() || clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())) {
@@ -266,6 +266,13 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                                 entityMap.remove(entry.getKey());
                             }
                         }
+                        Iterator<Map.Entry<String, Object>> iterator = entityMap.entrySet().iterator();
+                        while (iterator.hasNext()){
+                            Map.Entry<String, Object> objectKeyValue = iterator.next();
+                            if (objectKeyValue.getValue() == null) {
+                                iterator.remove();
+                            }
+                        }
                         Collections.sort(hbaseEntity.getRowkeyInfoList());
                         if (finalRKClass == Long.class) {
                             Long rowkey = 0L;
@@ -282,7 +289,7 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                             if (i > 0 && i < hbaseEntity.getRowkeyInfoList().size()) {
                                 rowkey.append("-");
                             }
-                            rowkey.append(((RowkeyInfo) rowkeyInfo).getField().getName());
+                            rowkey.append(entityMap.get(((RowkeyInfo) rowkeyInfo).getField().getName()));
                             i++;
                         }
                         return (RK) rowkey;

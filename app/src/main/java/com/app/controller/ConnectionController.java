@@ -7,6 +7,7 @@ import javax.annotation.Resource;
 
 import com.app.model.hbase.OrderRecord;
 import com.app.model.jpa.Order;
+import com.app.pojo.OrderPojo;
 import com.app.repository.hbase.OrderRecordRepository;
 import com.app.repository.jpa.OrderRepository;
 import com.app.repository.mongodb.MongoAccountRepository;
@@ -69,25 +70,27 @@ public class ConnectionController {
     @ApiOperation(value = "hbase保存")
     @GetMapping(value = "/hbase/save")
     public void hbaseSave(){
-        OrderRecord orderRecord = new OrderRecord();
-        orderRecord.setOrderId(UUID.randomUUID().toString());
-        orderRecord.setOrderDate((new Date()).getTime());
+        OrderPojo orderPojo = new OrderPojo();
 
-        orderRecord.setProductId(UUID.randomUUID().toString());
-        orderRecord.setProductName("product-name");
-        orderRecord.setProductPrice(10.20);
-        orderRecord.setProductType("phone");
+        orderPojo.setProductId(UUID.randomUUID().toString());
+        orderPojo.setProductName("product-name");
+        orderPojo.setProductPrice(10.20);
+        orderPojo.setProductType("phone");
 
-        orderRecord.setPaymentId(UUID.randomUUID().toString());
-        orderRecord.setPaymentAmount(10.20);
-        orderRecord.setPaymentDiscount(1.20);
-        orderRecord.setPaymentType("alipay");
+        orderPojo.setPaymentId(UUID.randomUUID().toString());
+        orderPojo.setPaymentAmount(10.20);
+        orderPojo.setPaymentDiscount(1.20);
+        orderPojo.setPaymentType("alipay");
 
         Order order = new Order();
-        BeanUtils.copyProperties(orderRecord, order);
+        BeanUtils.copyProperties(orderPojo, order);
         order.setCreateTime(new Date());
-
         orderRepository.save(order);
+
+        OrderRecord orderRecord = new OrderRecord();
+        BeanUtils.copyProperties(orderPojo, orderRecord);
+        orderRecord.setOrderId(order.getId());
+        orderRecord.setOrderDate(new Date().getTime());
 
         orderRecordRepository.save(orderRecord);
 

@@ -61,9 +61,10 @@ allprojects {
         sourceSets*.resources.srcDirs*.each { it.mkdirs() }
     }
 
-//    configurations {
+    configurations {
 //        all*.exclude group: 'ch.qos.logback', module: 'logback-classic'
-//    }
+        all*.exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
+    }
 
 //    configurations.all {
 //        resolutionStrategy {
@@ -73,6 +74,7 @@ allprojects {
 
     dependencies {
         compile "org.projectlombok:lombok:1.18.2"
+
         compile "io.reactivex.rxjava2:rxjava:2.1.13"
 
         compile "commons-io:commons-io:2.6"
