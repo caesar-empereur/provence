@@ -6,10 +6,13 @@ import java.util.UUID;
 import javax.annotation.Resource;
 
 import com.app.model.hbase.OrderRecord;
+import com.app.model.jpa.Order;
 import com.app.repository.hbase.OrderRecordRepository;
+import com.app.repository.jpa.OrderRepository;
 import com.app.repository.mongodb.MongoAccountRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,8 +50,11 @@ public class ConnectionController {
     @Resource
     private MongoAccountRepository mongoAccountRepository;
 
-//    @Resource
+    @Resource
     private OrderRecordRepository orderRecordRepository;
+
+    @Resource
+    private OrderRepository orderRepository;
     
     @ApiOperation(value = "count")
     @GetMapping(value = "/mongo/save")
@@ -58,12 +64,6 @@ public class ConnectionController {
         mongoAccount.setCreateTime(new Date());
         mongoAccount.setUsername(UUID.randomUUID().toString());
         mongoAccountRepository.save(mongoAccount);
-    }
-
-    @ApiOperation(value = "count")
-    @GetMapping(value = "/mongo/find")
-    public void select(){
-//        MongoAccount mongoAccount = mongoAccountRepository.findById("5c53bfa846e356252cdf8400").get();
     }
 
     @ApiOperation(value = "hbase保存")
@@ -82,6 +82,12 @@ public class ConnectionController {
         orderRecord.setPaymentAmount(10.20);
         orderRecord.setPaymentDiscount(1.20);
         orderRecord.setPaymentType("alipay");
+
+        Order order = new Order();
+        BeanUtils.copyProperties(orderRecord, order);
+        order.setCreateTime(new Date());
+
+        orderRepository.save(order);
 
         orderRecordRepository.save(orderRecord);
 

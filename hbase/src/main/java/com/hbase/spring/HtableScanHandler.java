@@ -72,9 +72,9 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
                                         BeanDefinitionRegistry registry) {
-//        if (CustomEnvironmentListener.ENABLED){
-//            registerBean(importingClassMetadata, registry);
-//        }
+        if (CustomEnvironmentListener.ENABLED){
+            registerBean(importingClassMetadata, registry);
+        }
     }
 
     private <T> void registerBean(AnnotationMetadata importingClassMetadata,
