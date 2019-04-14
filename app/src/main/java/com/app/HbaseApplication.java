@@ -24,6 +24,8 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @HbaseTableScan(modelPackage = "com.app.model.hbase", repositoryPackage = "com.app.repository.hbase")
 public class HbaseApplication implements WebMvcConfigurer {
 
+
+
     public static void main(String[] args) {
         SpringApplication.run(HbaseApplication.class);
     }
