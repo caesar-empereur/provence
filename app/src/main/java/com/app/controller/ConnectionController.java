@@ -1,6 +1,8 @@
 package com.app.controller;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import javax.annotation.Resource;
@@ -11,13 +13,13 @@ import com.app.pojo.OrderPojo;
 import com.app.repository.hbase.OrderRecordRepository;
 import com.app.repository.jpa.OrderRepository;
 import com.app.repository.mongodb.MongoAccountRepository;
+import io.swagger.annotations.ApiParam;
+import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.app.model.mongodb.MongoAccount;
 
@@ -82,10 +84,7 @@ public class ConnectionController {
         orderPojo.setPaymentDiscount(1.20);
         orderPojo.setPaymentType("alipay");
 
-        Order order = new Order();
-        BeanUtils.copyProperties(orderPojo, order);
-        order.setCreateTime(new Date());
-        orderRepository.save(order);
+        Order order = orderRepository.findById("8a8ae4a96a1ae0bd016a1ae112150000").get();
 
         OrderRecord orderRecord = new OrderRecord();
         BeanUtils.copyProperties(orderPojo, orderRecord);
@@ -96,4 +95,21 @@ public class ConnectionController {
 
     }
 
+    @ApiOperation(value = "hbase scan")
+    @PostMapping(value = "/hbase/scan")
+    public List<OrderRecord> scan(@ApiParam @RequestBody ScanQuest scanQuest){
+        return new ArrayList<>(orderRecordRepository.scan(scanQuest.getStart(),scanQuest.getEnd()));
+    }
+
+    @ApiOperation(value = "hbase get")
+    @PostMapping(value = "/hbase/get/{rk}")
+    public OrderRecord get(@PathVariable String rk){
+        return orderRecordRepository.findByRowkey(rk);
+    }
+
+    @Data
+    static class ScanQuest{
+        private String start;
+        private String end;
+    }
 }

@@ -1,8 +1,6 @@
 package com.hbase.repository;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
+import java.io.*;
 import java.math.BigDecimal;
 import java.util.*;
 
@@ -205,20 +203,6 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
         }
         return entityList;
     }
-
-    private Object byteToObject(byte[] bytes) {
-        Object obj = null;
-        try {
-            ByteArrayInputStream bi = new ByteArrayInputStream(bytes);
-            ObjectInputStream oi = new ObjectInputStream(bi);
-            obj = oi.readObject();
-            bi.close();
-            oi.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return obj;
-    }
     
     private void doDeleteOperation(List<Delete> deletes) {
         Table table = getConnectionTable();
@@ -292,6 +276,20 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
             return Bytes.toBytes((String) object);
         }
         return Bytes.toBytes(object.toString());
+    }
+
+    private Object byteToObject(byte[] bytes) {
+        Object obj = null;
+        try {
+            ByteArrayInputStream bi = new ByteArrayInputStream(bytes);
+            ObjectInputStream oi = new ObjectInputStream(bi);
+            obj = oi.readObject();
+            bi.close();
+            oi.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return obj;
     }
 
 }
