@@ -156,34 +156,13 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
             return null;
         }
         Set<ModelElement> modelElements = ReflectManeger.getAllMethodField(clazz);
-//        Set<String> allFieldStringSet = modelElements.stream()
-//                                                     .map(element -> element.getField().getName())
-//                                                     .collect(Collectors.toSet());
 
         HbaseTable hbaseTable = clazz.getAnnotation(HbaseTable.class);
         String tableName = hbaseTable.name();
 
-        Map<String, Class> rowkeyColumnMap = new HashMap<>();
-
         /* 校验配置的 rowkey 是否是真实存在的字段
         * 获取配置的 rowkey 的字段的类型
         * */
-//        for (String rowkeyColumn : configuredRowkeyColumnSet) {
-//            if (!allFieldStringSet.contains(rowkeyColumn)) {
-//                throw new ConfigurationException("找不到配置的 rowkey: " + rowkeyColumn);
-//            }
-//            for (ModelElement element : modelElements) {
-//                if (element.getField().getName().equals(rowkeyColumn)) {
-//                    Class fieldClass = element.getField().getType();
-//                    if (fieldClass == String.class || fieldClass == Long.class) {
-//                        rowkeyColumnMap.put(rowkeyColumn, element.getField().getClass());
-//                    }
-//                    else {
-//                        throw new ConfigurationException("rowkey 字段不支持该类型: " + fieldClass);
-//                    }
-//                }
-//            }
-//        }
         //获取所有配置的字段的名称，类型，family
         List<FamilyColumn> familyColumnList = new ArrayList<>();
         List<RowkeyInfo> rowkeyInfoList = new ArrayList<>();
@@ -261,11 +240,6 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                     public RK getRowkey(T entity) {
                         Map<String, Object> entityMap = JSON.parseObject(JSON.toJSONString(entity), Map.class);
                         // 字段为空的需要 去除掉
-                        for (Map.Entry<String, Object> entry : entityMap.entrySet()) {
-                            if (entry.getValue() == null) {
-                                entityMap.remove(entry.getKey());
-                            }
-                        }
                         Iterator<Map.Entry<String, Object>> iterator = entityMap.entrySet().iterator();
                         while (iterator.hasNext()){
                             Map.Entry<String, Object> objectKeyValue = iterator.next();

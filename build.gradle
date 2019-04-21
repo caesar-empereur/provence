@@ -62,8 +62,8 @@ allprojects {
     }
 
     configurations {
-//        all*.exclude group: 'ch.qos.logback', module: 'logback-classic'
-        all*.exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
+        all*.exclude group: 'ch.qos.logback', module: 'logback-classic'
+//        all*.exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
     }
 
 //    configurations.all {
