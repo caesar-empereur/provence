@@ -30,7 +30,6 @@ import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.util.ClassUtils;
 
-import com.alibaba.fastjson.JSON;
 import com.hbase.annotation.ColumnFamily;
 import com.hbase.annotation.HbaseTable;
 import com.hbase.annotation.HbaseTableScan;
@@ -47,6 +46,7 @@ import com.hbase.repository.HbaseRepositoryFactoryBean;
 import com.hbase.repository.HbaseRepositoryInfo;
 import com.hbase.repository.RowkeyGenerator;
 
+import org.springframework.util.CollectionUtils;
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 /**
@@ -167,54 +167,59 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
         List<FamilyColumn> familyColumnList = new ArrayList<>();
         List<RowkeyInfo> rowkeyInfoList = new ArrayList<>();
         for (ModelElement element : modelElements) {
-            FamilyColumn familyColumn = new FamilyColumn();
-            familyColumn.setColumnName(element.getField().getName());
-            familyColumn.setColumnType(element.getField().getType());
-            
-            // 收集 falily 信息
+            //不是 column 也不是 rowkey
+            if (!IS_ANNOTATED.apply(element.getReadMethod(), ColumnFamily.class)
+                && !IS_ANNOTATED.apply(element.getField(), ColumnFamily.class)
+                && !IS_ANNOTATED.apply(element.getReadMethod(), RowKey.class)
+                && !IS_ANNOTATED.apply(element.getField(), RowKey.class)) {
+                continue;
+            }
+            //同一个字段，不能出现 字段和get方法都配置 family 信息
             if (IS_ANNOTATED.apply(element.getReadMethod(), ColumnFamily.class)
                 && IS_ANNOTATED.apply(element.getField(), ColumnFamily.class)) {
                 throw new ConfigurationException("重复配置 family 信息");
             }
-            else if (IS_ANNOTATED.apply(element.getReadMethod(), ColumnFamily.class)
-                     && !IS_ANNOTATED.apply(element.getField(), ColumnFamily.class)) {
-                familyColumn.setFamilyName(element.getReadMethod()
-                                                  .getAnnotation(ColumnFamily.class)
-                                                  .name());
-                familyColumnList.add(familyColumn);
-            }
-            else if (!IS_ANNOTATED.apply(element.getReadMethod(), ColumnFamily.class)
-                     && IS_ANNOTATED.apply(element.getField(), ColumnFamily.class)) {
-                familyColumn.setFamilyName(element.getField()
-                                                  .getAnnotation(ColumnFamily.class)
-                                                  .name());
-                familyColumnList.add(familyColumn);
-            }
-
-            //收集 rowkey 信息
-            RowkeyInfo rowkeyInfo = new RowkeyInfo();
+            //同一个字段，不能出现 字段和get方法都配置 rowkey 信息
             if (IS_ANNOTATED.apply(element.getReadMethod(), RowKey.class)
                 && IS_ANNOTATED.apply(element.getField(), RowKey.class)) {
                 throw new ConfigurationException("重复配置 RowKey 信息");
             }
-            else if (IS_ANNOTATED.apply(element.getReadMethod(), RowKey.class)
-                     && !IS_ANNOTATED.apply(element.getField(), RowKey.class)) {
+
+            FamilyColumn familyColumn = new FamilyColumn();
+            familyColumn.setColumnName(element.getField().getName());
+            familyColumn.setColumnType(element.getField().getType());
+            
+            //是一个普通的 column 收集 falily 信息
+            if (IS_ANNOTATED.apply(element.getReadMethod(), ColumnFamily.class)) {
+                familyColumn.setFamilyName(element.getReadMethod()
+                                                  .getAnnotation(ColumnFamily.class).name());
+                familyColumnList.add(familyColumn);
+            }
+            else if (IS_ANNOTATED.apply(element.getField(), ColumnFamily.class)) {
+                familyColumn.setFamilyName(element.getField()
+                                                  .getAnnotation(ColumnFamily.class).name());
+                familyColumnList.add(familyColumn);
+            }
+            // 是一个 rowkey 字段 收集 rowkey 信息
+            if (IS_ANNOTATED.apply(element.getReadMethod(), RowKey.class)) {
+                RowkeyInfo rowkeyInfo = new RowkeyInfo();
                 rowkeyInfo.setField(element.getField());
                 rowkeyInfo.setOrder(element.getReadMethod().getAnnotation(RowKey.class).order());
                 rowkeyInfoList.add(rowkeyInfo);
             }
-            else if (!IS_ANNOTATED.apply(element.getReadMethod(), RowKey.class)
-                     && IS_ANNOTATED.apply(element.getField(), RowKey.class)) {
+            else if (IS_ANNOTATED.apply(element.getField(), RowKey.class)) {
+                RowkeyInfo rowkeyInfo = new RowkeyInfo();
                 rowkeyInfo.setField(element.getField());
                 rowkeyInfo.setOrder(element.getField().getAnnotation(RowKey.class).order());
                 rowkeyInfoList.add(rowkeyInfo);
             }
         }
-
+        if (CollectionUtils.isEmpty(familyColumnList) || CollectionUtils.isEmpty(rowkeyInfoList)) {
+            return null;
+        }
         return new MappingHbaseEntity<>(clazz, tableName, rowkeyInfoList, familyColumnList);
     }
 
-    
     private <T, R, RK> HbaseRepositoryInfo<T, R, RK> resolveRepositoryClass(Class<R> clazz) {
         Optional.ofNullable(clazz).orElseThrow(() -> new ParseException(""));
         if (!IS_ANNOTATED.apply(clazz, com.hbase.annotation.HbaseRepository.class)) {
@@ -235,40 +240,9 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
                 hbaseRepositoryInfo.setHbaseEntity(hbaseEntity);
                 
                 final Class finalRKClass = (Class) types[i == 0 ? 1 : 0];
-                RowkeyGenerator<T, RK> rowkeyGenerator = new RowkeyGenerator<T, RK>() {
-                    @Override
-                    public RK getRowkey(T entity) {
-                        Map<String, Object> entityMap = JSON.parseObject(JSON.toJSONString(entity), Map.class);
-                        // 字段为空的需要 去除掉
-                        Iterator<Map.Entry<String, Object>> iterator = entityMap.entrySet().iterator();
-                        while (iterator.hasNext()){
-                            Map.Entry<String, Object> objectKeyValue = iterator.next();
-                            if (objectKeyValue.getValue() == null) {
-                                iterator.remove();
-                            }
-                        }
-                        Collections.sort(hbaseEntity.getRowkeyInfoList());
-                        if (finalRKClass == Long.class) {
-                            Long rowkey = 0L;
-                            // 生成 rowkey
-                            for (Object rowkeyInfo : hbaseEntity.getRowkeyInfoList()) {
-                                rowkey = rowkey
-                                         + entityMap.get(((RowkeyInfo) rowkeyInfo).getField().getName()).hashCode();
-                            }
-                            return (RK) rowkey;
-                        }
-                        StringBuilder rowkey = new StringBuilder("");
-                        int i=0;
-                        for (Object rowkeyInfo: hbaseEntity.getRowkeyInfoList()) {
-                            if (i > 0 && i < hbaseEntity.getRowkeyInfoList().size()) {
-                                rowkey.append("-");
-                            }
-                            rowkey.append(entityMap.get(((RowkeyInfo) rowkeyInfo).getField().getName()));
-                            i++;
-                        }
-                        return (RK) rowkey;
-                    }
-                };
+
+                RowkeyGenerator<T, RK>
+                        rowkeyGenerator = new RowkeyGenerator<>(hbaseEntity, finalRKClass);
                 ((MappingHbaseEntity<T, RK>) hbaseEntity).setRowkeyGenerator(rowkeyGenerator);
                 TABLE_CONTAINNER.put(typeClass, hbaseEntity);
             }

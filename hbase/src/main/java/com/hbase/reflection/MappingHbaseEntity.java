@@ -1,12 +1,12 @@
 package com.hbase.reflection;
 
-import com.hbase.core.FamilyColumn;
-import com.hbase.repository.RowkeyGenerator;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.lang.Nullable;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import com.hbase.core.FamilyColumn;
+import com.hbase.repository.RowkeyGenerator;
 
 /**
  * @Description

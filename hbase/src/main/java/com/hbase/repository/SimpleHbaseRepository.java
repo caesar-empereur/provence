@@ -64,7 +64,8 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
         while (iterator.hasNext()){
             Map.Entry<String, Object> objectKeyValue = iterator.next();
             if (objectKeyValue.getValue() == null
-                || this.rowkeyInfoMap.get(objectKeyValue.getKey()) != null) {
+//                || this.rowkeyInfoMap.get(objectKeyValue.getKey()) != null
+                    ) {
                 iterator.remove();
                 continue;
             }
@@ -200,6 +201,11 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
             for (Cell cell : result.listCells()){
                 entityMap.put(Bytes.toString(CellUtil.cloneQualifier(cell)),
                               convertToObject(cell));
+
+                String rowkeyValue = Bytes.toString(CellUtil.cloneRow(cell));
+                if (rowkeyValue.contains("-")){
+
+                }
             }
             T entity = JSON.parseObject(JSON.toJSONString(entityMap), hbaseEntity.getJavaType());
             entityList.add(entity);
@@ -307,20 +313,6 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
             return value;
         }
         return value;
-    }
-
-    private Object byteToObject(byte[] bytes) {
-        Object obj = null;
-        try {
-            ByteArrayInputStream bi = new ByteArrayInputStream(bytes);
-            ObjectInputStream oi = new ObjectInputStream(bi);
-            obj = oi.readObject();
-            bi.close();
-            oi.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return obj;
     }
 
 }

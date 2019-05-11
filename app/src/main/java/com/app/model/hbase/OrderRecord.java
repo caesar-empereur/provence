@@ -15,9 +15,11 @@ import lombok.Data;
 public class OrderRecord extends OrderPojo {
 
     @RowKey(order = 1)
+    @ColumnFamily(name = "payment")
     private String orderId;
 
     @RowKey(order = 2)
+    @ColumnFamily(name = "payment")
     private Long orderDate;
 
     @ColumnFamily(name = "product")

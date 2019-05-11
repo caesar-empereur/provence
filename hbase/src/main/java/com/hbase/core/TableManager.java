@@ -65,6 +65,8 @@ public class TableManager {
                                                                   ColumnFamilyDescriptorBuilder.of(family);
                     tableDescriptor.setColumnFamily(columnFamilyDescriptor);
                 }
+                //添加一个 family,用来存储 rowkey 的字段信息
+                tableDescriptor.setColumnFamily(ColumnFamilyDescriptorBuilder.of("rowkey"));
                 admin.createTable(tableDescriptor);
                 succeed = true;
             }
