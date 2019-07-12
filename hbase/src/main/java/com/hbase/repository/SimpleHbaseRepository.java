@@ -114,8 +114,10 @@ public class SimpleHbaseRepository<T, RK> implements HbaseRepository<T, RK> {
 
     @Override
     public Collection<T> scan(RK start, RK end) {
-        Scan scan = new Scan().withStartRow(convertRowkeyToByte(start))
-                              .withStopRow(convertRowkeyToByte(end));
+        Scan scan = new Scan().withStartRow(convertRowkeyToByte(start));
+        if (end != null){
+            scan.withStopRow(convertRowkeyToByte(end));
+        }
         Table table = getConnectionTable();
         ResultScanner resultScanner;
         try {

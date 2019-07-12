@@ -65,11 +65,6 @@ public class OrderHistory extends OrderPojo {
     }
     
     @Override
-    public String getProductType() {
-        return super.getProductType();
-    }
-    
-    @Override
     public String getPaymentId() {
         return super.getPaymentId();
     }
@@ -77,11 +72,6 @@ public class OrderHistory extends OrderPojo {
     @Override
     public Double getPaymentAmount() {
         return super.getPaymentAmount();
-    }
-    
-    @Override
-    public Double getPaymentDiscount() {
-        return super.getPaymentDiscount();
     }
     
     @Override

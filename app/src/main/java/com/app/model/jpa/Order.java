@@ -20,8 +20,8 @@ public class Order extends OrderPojo {
     private Date createTime;
 
     @Id
-    @GeneratedValue(generator = "jpa-uuid")
-    @GenericGenerator(name = "jpa-uuid", strategy = "uuid")
+//    @GeneratedValue(generator = "jpa-uuid")
+//    @GenericGenerator(name = "jpa-uuid", strategy = "uuid")
     @Column(length = 36)
     public String getId() {
         return id;
@@ -55,11 +55,6 @@ public class Order extends OrderPojo {
     }
 
     @Override
-    public String getProductType() {
-        return super.getProductType();
-    }
-
-    @Override
     public String getPaymentId() {
         return super.getPaymentId();
     }
@@ -67,11 +62,6 @@ public class Order extends OrderPojo {
     @Override
     public Double getPaymentAmount() {
         return super.getPaymentAmount();
-    }
-
-    @Override
-    public Double getPaymentDiscount() {
-        return super.getPaymentDiscount();
     }
 
     @Override

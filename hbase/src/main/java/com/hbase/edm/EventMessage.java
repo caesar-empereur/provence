@@ -38,11 +38,12 @@ public class EventMessage {
     private EventMessage() {
     }
     
-    public void register(EventListener eventListener) {
+    public EventMessage register(EventListener eventListener) {
         Class<EventObject> clazz =
                                  (Class<EventObject>) ((ParameterizedTypeImpl) eventListener.getClass()
                                                                                             .getGenericInterfaces()[0]).getActualTypeArguments()[0];
         container.put(clazz, eventListener);
+        return getInstance();
     }
     
     public void publish(EventObject eventObject) {

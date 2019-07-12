@@ -40,12 +40,6 @@ public class OrderRecord extends OrderPojo {
         return super.getProductPrice();
     }
 
-    @ColumnFamily(name = "product")
-    @Override
-    public String getProductType() {
-        return super.getProductType();
-    }
-
     @ColumnFamily(name = "payment")
     @Override
     public String getPaymentId() {
@@ -56,12 +50,6 @@ public class OrderRecord extends OrderPojo {
     @Override
     public Double getPaymentAmount() {
         return super.getPaymentAmount();
-    }
-
-    @ColumnFamily(name = "payment")
-    @Override
-    public Double getPaymentDiscount() {
-        return super.getPaymentDiscount();
     }
 
     @ColumnFamily(name = "payment")

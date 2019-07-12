@@ -16,14 +16,10 @@ public class OrderPojo {
 
     private Double productPrice;
 
-    private String productType;
-
 
     private String paymentId;
 
     private Double paymentAmount;
-
-    private Double paymentDiscount;
 
     private String paymentType;
 
