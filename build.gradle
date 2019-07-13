@@ -56,21 +56,18 @@ allprojects {
         }
     }
 
-    task createEmptySrc << {
-        sourceSets*.java.srcDirs*.each { it.mkdirs() }
-        sourceSets*.resources.srcDirs*.each { it.mkdirs() }
-    }
-
     configurations {
         all*.exclude group: 'org.slf4j', module: 'slf4j-log4j12'
         all*.exclude group: 'log4j', module: 'log4j'
+//        all*.exclude group: 'javax', module: 'javaee-api'
+
     }
 
-//    configurations.all {
-//        resolutionStrategy {
-//            force 'com.google.guava:guava:15.0'
-//        }
-//    }
+    configurations.all {
+        resolutionStrategy {
+            force 'javax:javaee-api:8.0.1'
+        }
+    }
 
     dependencies {
         compile "org.projectlombok:lombok:1.18.2"

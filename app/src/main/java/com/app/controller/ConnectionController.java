@@ -92,7 +92,6 @@ public class ConnectionController {
     public void hbaseSave() {
         
         List<OrderRecord> orderRecordList = new ArrayList<>();
-        List<OrderHistory> orderHistoryList = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             OrderPojo orderPojo = new OrderPojo();
             
@@ -113,30 +112,24 @@ public class ConnectionController {
             orderRecord.setOrderId(UUIDUtil.randomUUID());
             orderRecord.setOrderDate(date.getTime());
             
-            OrderHistory orderHistory = new OrderHistory();
-            BeanUtils.copyProperties(orderRecord, orderHistory);
-            
-            orderHistory.setOrderDate(date);
-            orderHistoryList.add(orderHistory);
             orderRecordList.add(orderRecord);
         }
         long start = System.currentTimeMillis();
-//        orderRecordRepository.saveAll(orderRecordList);
-        orderHistoryRepository.saveAll(orderHistoryList);
+        orderRecordRepository.saveAll(orderRecordList);
         log.info("消耗时间：" + (System.currentTimeMillis() - start) / 1000);
     }
 
-    @ApiOperation(value = "hbase 查询")
-    @PostMapping(value = "/hbase/scan")
-    public List<OrderRecord> scan(@ApiParam @RequestBody ScanQuest scanQuest){
-        return new ArrayList<>(orderRecordRepository.scan(scanQuest.getStart(), scanQuest.getEnd()));
-    }
+//    @ApiOperation(value = "hbase 查询")
+//    @PostMapping(value = "/hbase/scan")
+//    public List<OrderRecord> scan(@ApiParam @RequestBody ScanQuest scanQuest){
+//        return new ArrayList<>(orderRecordRepository.scan(scanQuest.getStart(), scanQuest.getEnd()));
+//    }
 
-    @ApiOperation(value = "hbase get")
-    @PostMapping(value = "/hbase/get/{rk}")
-    public OrderRecord get(@PathVariable String rk){
-        return orderRecordRepository.findByRowkey(rk);
-    }
+//    @ApiOperation(value = "hbase get")
+//    @PostMapping(value = "/hbase/get/{rk}")
+//    public OrderRecord get(@PathVariable String rk){
+//        return orderRecordRepository.findByRowkey(rk);
+//    }
 
     @Data
     static class ScanQuest{
