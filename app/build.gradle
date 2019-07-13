@@ -12,12 +12,10 @@ war{
 dependencies{
     compile project(":hbase")
 
-    compile "org.springframework.boot:spring-boot-starter-thymeleaf:$version_spring_boot"
-    compile "org.springframework.boot:spring-boot-starter-data-redis:$version_spring_boot"
 
-    compile "org.eclipse:yasson:1.0"
-    compile "org.glassfish:javax.json:1.1"
-    compile "javax.json:javax.json-api:1.1"
+//    compile "org.eclipse:yasson:1.0"
+//    compile "org.glassfish:javax.json:1.1"
+//    compile "javax.json:javax.json-api:1.1"
 
     compile "io.swagger:swagger-annotations:1.5.9"
     compile "io.swagger:swagger-models:1.5.9"

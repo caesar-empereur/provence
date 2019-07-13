@@ -18,7 +18,6 @@ public class OrderRecord extends OrderPojo {
     @ColumnFamily(name = "payment")
     private String orderId;
 
-    @RowKey(order = 2)
     @ColumnFamily(name = "payment")
     private Long orderDate;
 

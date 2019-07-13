@@ -26,32 +26,12 @@ public class ModePrepareListener implements EventListener<ModelPrepareEvent> {
     public void onEvent(ModelPrepareEvent event) {
         Collection<HbaseEntity> htables = event.getSource();
         log.info("开始表结构初始化");
-
         TableManager tableManager = TABLE_MANAGER_SUPPLIER.get();
-
-        CountDownLatch count = new CountDownLatch(htables.size());
-        Map<HbaseEntity, Boolean> results = new HashMap<>();
-        ExecutorService executorService = Executors.newFixedThreadPool(htables.size());
-
-        try {
-            for (HbaseEntity entityInfo : htables) {
-                Future<Boolean> result = executorService.submit(() -> tableManager.initTable(entityInfo,
-                                                                                           count::countDown));
-                results.put(entityInfo, result.get());
-            }
-            count.await();
-        }
-        catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+        for (HbaseEntity entityInfo : htables) {
+            tableManager.initTable(entityInfo);
         }
         tableManager.closeAdmin();
-        executorService.shutdown();
-        
+
         log.info("表结构初始化完成");
-        for (Map.Entry<HbaseEntity, Boolean> entry : results.entrySet()){
-            if (!entry.getValue()){
-                throw new InitException(entry.getKey().getTableName());
-            }
-        }
     }
 }

@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import com.hbase.exception.OperationException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.TableName;
@@ -34,10 +35,9 @@ public class TableManager {
     
     private Admin admin = null;
 
-    public Boolean initTable(HbaseEntity hbaseEntity, InitFinishedCallback callback) {
+    public void initTable(HbaseEntity hbaseEntity) {
         ConnectionProvider<Connection> connectionProvider = connectionProviderSupplier.get();
 
-        boolean succeed;
         Connection connection = null;
         try {
             connection = connectionProvider.getConnection();
@@ -49,7 +49,7 @@ public class TableManager {
                 tableNames = Arrays.asList(admin.listTableNames());
             }
             if (tableNames.contains(tableName)) {
-                succeed = true;
+                return;
             }
             else {
                 // 只需要处理 column family, column 在 Put 的时候指定
@@ -68,16 +68,13 @@ public class TableManager {
                 //添加一个 family,用来存储 rowkey 的字段信息
                 tableDescriptor.setColumnFamily(ColumnFamilyDescriptorBuilder.of("rowkey"));
                 admin.createTable(tableDescriptor);
-                succeed = true;
             }
         }
         catch (IOException e) {
             log.error(e.getMessage());
-            succeed = false;
+            throw new OperationException(e.getMessage());
         }
         connectionProvider.recycleConnection(connection);
-        callback.finish();
-        return succeed;
     }
     
     public void closeAdmin() {
