@@ -65,14 +65,11 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
 
     public static final ConcurrentMap<Class, HbaseEntity> TABLE_CONTAINNER = new ConcurrentHashMap<>();
 
-    static {
-        EventMessage.getInstance().register(new ModePrepareListener());
-    }
-    
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
                                         BeanDefinitionRegistry registry) {
         if (CustomEnvironmentListener.ENABLED){
+            EventMessage.getInstance().register(new ModePrepareListener());
             registerBean(importingClassMetadata, registry);
         }
     }

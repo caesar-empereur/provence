@@ -7,7 +7,7 @@ manifest {
 }
 
 jar {
-    baseName = 'hbase-template'
+    baseName = 'provence'
 }
 
 dependencies {
