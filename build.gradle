@@ -80,7 +80,6 @@ allprojects {
         compile "org.springframework.boot:spring-boot-starter-web:$version_spring_boot"
         compile "org.springframework.boot:spring-boot-starter-logging:$version_spring_boot"
         compile "org.springframework.boot:spring-boot-starter-data-jpa:$version_spring_boot"
-        compile "org.springframework.boot:spring-boot-starter-data-mongodb:$version_spring_boot"
 
         testCompile "junit:junit:4.11"
         testCompile "org.mockito:mockito-all:1.10.19"
