@@ -1,6 +1,5 @@
-package com.app.repository.hbase;
+package com.app;
 
-import com.app.model.hbase.OrderRecord;
 import com.hbase.repository.HbaseRepository;
 
 /**
