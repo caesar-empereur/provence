@@ -29,6 +29,12 @@
 * gradle4.3
 * JDK1.8
 
+#### 模块说明
+* 这是一个多模块的项目
+* springboot 的依赖是写在父工程的脚本的
+* hbase 模块就是这个工具的实现的提供方
+* app 模块就是用到 hbase 模块的使用方，测试用例写在这里面
+
 #### 代码check下来后编译jar包的方式
 ```
 进入工程的根目录，也就是gradle.build的目录, 执行 gradle clean bootWar命令
