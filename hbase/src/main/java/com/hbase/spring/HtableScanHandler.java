@@ -95,7 +95,6 @@ public class HtableScanHandler implements ImportBeanDefinitionRegistrar, Resourc
 
         EventMessage.getInstance().publish(new ModelPrepareEvent(hbaseEntitySet));
         registerRepository(repositorySet, registry);
-        System.out.printf("");
     }
     
     private void registerRepository(Set<HbaseRepositoryInfo> hbaseRepositoryInfos,
