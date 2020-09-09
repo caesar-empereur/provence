@@ -70,13 +70,17 @@ hbase.enabled=false
 ```
 
 ## **[实现原理](#)**
-- 总体上是基于 springboot 的 bean 注入，注解扫描解析，FactoryBean 代理接口注入的适用
-- 启动的时候扫描加了 @HbaseTable 的实体类 和 @HbaseRepository 注解的接口
-- @HbaseTable 相当于JPA的 @Entity 实体, @HbaseRepository 相当于JPA 的 @Repository 查询接口
-- 用一个 HbaseRepositoryFactoryBean(实现了FactoryBean接口的类)来封装需要注入的 bean 的信息
-- HbaseRepositoryFactoryBean 的 getObject() 方法返回的是一个代理了 目标查询接口的bean
-- getObject() 方法返回 ProxyFactory 构造的一个对象，代理目标是 SimpleHbaseRepository，代理接口是查询接口
-- SimpleHbaseRepository 才是真正的实现curd功能的查询接口，该bean包含了一个查询接口关联的实体信息
-- 最终注入的 bean 是 BeanDefinitionBuilder.rootBeanDefinition(HbaseRepositoryFactoryBean.class);
-- 这种FactoryBean在容器中获取的时候是调用 getObject() 方法返回的bean对象
-- 在有注入查询接口的地方，spring 返回的 bean 对象就是getObject() 方法返回的bean对象
+#### 总体上是基于 springboot 的 bean 注入，注解扫描解析，FactoryBean 代理接口注入的适用
+- 1 **[扫描加了注解的实体和接口](#)**
+    - 启动的时候扫描加了 @HbaseTable 的实体类 和 @HbaseRepository 注解的接口
+    - @HbaseTable 相当于JPA的 @Entity 实体, @HbaseRepository 相当于JPA 的 @Repository 查询接口
+- 2 **[封装查询接口对应的bean](#)**
+    - 用一个 HbaseRepositoryFactoryBean(实现了FactoryBean接口的类)来封装需要注入的 bean 的信息
+    - HbaseRepositoryFactoryBean 的 getObject() 方法返回的是一个代理，目标是 SimpleHbaseRepository，代理接口是查询接口
+    - SimpleHbaseRepository 才是真正的实现curd功能的查询接口，该bean包含了一个查询接口关联的实体信息
+- 3 **[bean的注入](#)**
+    - 最终注入的 bean 是 BeanDefinitionBuilder.rootBeanDefinition(HbaseRepositoryFactoryBean.class);
+    - 这种FactoryBean在容器中获取的时候是调用 getObject() 方法返回的bean对象
+    - 在有注入查询接口的地方，spring 返回的 bean 对象就是getObject() 方法返回的bean对象
+
+#### 注入的代理的bean用到了JDK的动态代理
