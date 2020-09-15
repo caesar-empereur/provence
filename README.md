@@ -80,3 +80,17 @@ hbase.enabled=false
 - 最终注入的 bean 是 BeanDefinitionBuilder.rootBeanDefinition(HbaseRepositoryFactoryBean.class);
 - 这种FactoryBean在容器中获取的时候是调用 getObject() 方法返回的bean对象
 - 在有注入查询接口的地方，spring 返回的 bean 对象就是getObject() 方法返回的bean对象
+
+## Hbase 基本信息
+- Hbase 在大数据中的校色
+    ![TCP可靠性保证](https://github.com/caesar-empereur/provence/blob/master/doc/tcp/TCP可靠性保证.png)
+- 一个存储大Map的数据库
+    ![一个存储大Map的数据库](https://github.com/caesar-empereur/provence/blob/master/doc/一个存储大Map的数据库.png)
+- Hbase 查询设计
+    ![hbase应用场景](https://github.com/caesar-empereur/provence/blob/master/doc/hbase应用场景.png)
+- Hbase 关联查询
+    ![Hbase关联查询](https://github.com/caesar-empereur/provence/blob/master/doc/Hbase关联查询.png)
+- Hbase 存储原理
+    ![Hbase存储原理](https://github.com/caesar-empereur/provence/blob/master/doc/Hbase存储原理.png)
+- Hbase get, put 过程
+    ![Hbase-get-put过程](https://github.com/caesar-empereur/provence/blob/master/doc/Hbase-get-put过程.png)
