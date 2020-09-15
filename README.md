@@ -87,7 +87,7 @@ hbase.enabled=false
 
 ## Hbase 基本信息
 - Hbase 在大数据中的校色
-    ![TCP可靠性保证](https://github.com/caesar-empereur/provence/blob/master/doc/tcp/TCP可靠性保证.png)
+    ![Hbase的角色](https://github.com/caesar-empereur/provence/blob/master/doc/Hbase的角色.png)
 - 一个存储大Map的数据库
     ![一个存储大Map的数据库](https://github.com/caesar-empereur/provence/blob/master/doc/一个存储大Map的数据库.png)
 - Hbase 查询设计
